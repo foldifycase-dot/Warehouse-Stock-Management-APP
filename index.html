@@ -1173,7 +1173,7 @@ async function confirmRestock(){
 
   renderPOLog();
   closeRestock();
-  showToast(`Order ${orderId} placed — ${currentOrderLines.length} item${currentOrderLines.length!==1?'s':''}${supplierEmail?' · Supplier notified':''},'ok');
+  showToast(`Order ${orderId} placed — ${currentOrderLines.length} item${currentOrderLines.length!==1?'s':''}${supplierEmail?' · Supplier notified':''}`,'ok');
 }
 
 async function sendToSupplier(order){
