@@ -421,6 +421,40 @@ td:first-child{padding-left:16px;}
 .po-group-deliver:hover{background:var(--green);color:#fff;border-color:var(--green);}
 .po-group-delivered{font-size:10px;color:rgba(26,26,24,.35);font-weight:500;margin-left:4px;font-style:italic;}
 
+
+/* QUICK RESTOCK BUTTON in tables */
+.btn-restock{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1.5px solid rgba(200,169,110,.4);border-radius:6px;background:rgba(200,169,110,.08);color:var(--gold-d);font-size:10px;font-weight:600;font-family:"Inter",sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-restock:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
+.btn-restock svg{flex-shrink:0;}
+
+/* FLOATING ACTION BUTTON */
+.fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--ink);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(26,26,24,.25);z-index:150;transition:all .2s;}
+.fab:hover{background:var(--gold);transform:scale(1.08);}
+.fab-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;font-family:"Syne",sans-serif;border:2px solid var(--cream);}
+.fab-badge.show{display:flex;}
+
+/* CART PANEL (slide up from bottom-right) */
+.cart-panel{position:fixed;bottom:90px;right:28px;width:340px;max-width:95vw;background:#fff;border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(26,26,24,.18);z-index:149;display:none;flex-direction:column;overflow:hidden;max-height:70vh;}
+.cart-panel.open{display:flex;}
+.cart-panel-hdr{padding:12px 14px;background:#EAE7D8;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cart-panel-title{font-family:"Syne",sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);}
+.cart-panel-body{overflow-y:auto;flex:1;}
+.cart-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);}
+.cart-item:last-child{border-bottom:none;}
+.cart-item-img{width:30px;height:30px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.cart-item-img-ph{width:30px;height:30px;border-radius:4px;background:#EAE7D8;flex-shrink:0;}
+.cart-item-info{flex:1;min-width:0;}
+.cart-item-name{font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cart-item-variant{font-size:10px;color:rgba(26,26,24,.4);}
+.cart-item-qty{display:flex;align-items:center;gap:4px;}
+.cart-qty-btn{width:22px;height:22px;border-radius:4px;border:1px solid var(--border2);background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--ink);line-height:1;transition:background .12s;}
+.cart-qty-btn:hover{background:var(--cream);}
+.cart-qty-num{font-family:"DM Mono",monospace;font-weight:700;font-size:12px;min-width:24px;text-align:center;}
+.cart-item-remove{width:18px;height:18px;border:none;background:transparent;cursor:pointer;color:rgba(26,26,24,.25);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cart-item-remove:hover{color:var(--red);}
+.cart-panel-ftr{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:6px;}
+.cart-empty{padding:24px;text-align:center;font-size:12px;color:rgba(26,26,24,.35);}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -841,6 +875,28 @@ td:first-child{padding-left:16px;}
 
 <div class="toast" id="toast"><span id="tMsg"></span></div>
 
+<!-- FLOATING RESTOCK CART -->
+<button class="fab" id="restockFab" onclick="toggleCart()" title="Restock order">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+  <span class="fab-badge" id="fabBadge">0</span>
+</button>
+
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel-hdr">
+    <div class="cart-panel-title">Restock Order <span id="cartCount" style="font-size:10px;background:rgba(26,26,24,.1);padding:1px 7px;border-radius:10px;font-weight:400;margin-left:4px">0 items</span></div>
+    <button class="modal-close" onclick="toggleCart()">×</button>
+  </div>
+  <div class="cart-panel-body" id="cartBody">
+    <div class="cart-empty">No items yet — hit + Restock on any product</div>
+  </div>
+  <div class="cart-panel-ftr">
+    <button class="btn-out" style="flex:1;font-size:11px" onclick="clearCart()">Clear</button>
+    <button class="btn-sol gold" style="flex:2;font-size:11px" onclick="checkoutCart()">Create Restock Order →</button>
+  </div>
+</div>
+
 <!-- RESTOCK MODAL -->
 <div class="modal-overlay" id="restockModal">
   <div class="modal" style="width:620px;max-width:96vw">
@@ -935,6 +991,28 @@ td:first-child{padding-left:16px;}
 
 <div class="toast" id="toast"><span id="tMsg"></span></div>
 
+<!-- FLOATING RESTOCK CART -->
+<button class="fab" id="restockFab" onclick="toggleCart()" title="Restock order">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+  <span class="fab-badge" id="fabBadge">0</span>
+</button>
+
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel-hdr">
+    <div class="cart-panel-title">Restock Order <span id="cartCount" style="font-size:10px;background:rgba(26,26,24,.1);padding:1px 7px;border-radius:10px;font-weight:400;margin-left:4px">0 items</span></div>
+    <button class="modal-close" onclick="toggleCart()">×</button>
+  </div>
+  <div class="cart-panel-body" id="cartBody">
+    <div class="cart-empty">No items yet — hit + Restock on any product</div>
+  </div>
+  <div class="cart-panel-ftr">
+    <button class="btn-out" style="flex:1;font-size:11px" onclick="clearCart()">Clear</button>
+    <button class="btn-sol gold" style="flex:2;font-size:11px" onclick="checkoutCart()">Create Restock Order →</button>
+  </div>
+</div>
+
 <!-- RESTOCK MODAL -->
 <div class="modal-overlay" id="restockModal">
   <div class="modal" style="width:620px;max-width:96vw">
@@ -1029,6 +1107,28 @@ td:first-child{padding-left:16px;}
 
 <div class="toast" id="toast"><span id="tMsg"></span></div>
 
+<!-- FLOATING RESTOCK CART -->
+<button class="fab" id="restockFab" onclick="toggleCart()" title="Restock order">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+  <span class="fab-badge" id="fabBadge">0</span>
+</button>
+
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel-hdr">
+    <div class="cart-panel-title">Restock Order <span id="cartCount" style="font-size:10px;background:rgba(26,26,24,.1);padding:1px 7px;border-radius:10px;font-weight:400;margin-left:4px">0 items</span></div>
+    <button class="modal-close" onclick="toggleCart()">×</button>
+  </div>
+  <div class="cart-panel-body" id="cartBody">
+    <div class="cart-empty">No items yet — hit + Restock on any product</div>
+  </div>
+  <div class="cart-panel-ftr">
+    <button class="btn-out" style="flex:1;font-size:11px" onclick="clearCart()">Clear</button>
+    <button class="btn-sol gold" style="flex:2;font-size:11px" onclick="checkoutCart()">Create Restock Order →</button>
+  </div>
+</div>
+
 <!-- RESTOCK MODAL -->
 <div class="modal-overlay" id="restockModal">
   <div class="modal" style="width:620px;max-width:96vw">
@@ -1122,6 +1222,28 @@ td:first-child{padding-left:16px;}
 </div>
 
 <div class="toast" id="toast"><span id="tMsg"></span></div>
+
+<!-- FLOATING RESTOCK CART -->
+<button class="fab" id="restockFab" onclick="toggleCart()" title="Restock order">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+  <span class="fab-badge" id="fabBadge">0</span>
+</button>
+
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel-hdr">
+    <div class="cart-panel-title">Restock Order <span id="cartCount" style="font-size:10px;background:rgba(26,26,24,.1);padding:1px 7px;border-radius:10px;font-weight:400;margin-left:4px">0 items</span></div>
+    <button class="modal-close" onclick="toggleCart()">×</button>
+  </div>
+  <div class="cart-panel-body" id="cartBody">
+    <div class="cart-empty">No items yet — hit + Restock on any product</div>
+  </div>
+  <div class="cart-panel-ftr">
+    <button class="btn-out" style="flex:1;font-size:11px" onclick="clearCart()">Clear</button>
+    <button class="btn-sol gold" style="flex:2;font-size:11px" onclick="checkoutCart()">Create Restock Order →</button>
+  </div>
+</div>
 
 <!-- RESTOCK MODAL -->
 <div class="modal-overlay" id="restockModal">
@@ -1814,6 +1936,150 @@ function renderPOLog(){
 }
 
 
+
+// ── QUICK RESTOCK CART ─────────────────────────────────────────────────────
+let cartItems = []; // [{productId, variantId, product, variant, image, qty}]
+let cartOpen = false;
+
+function toggleCart(){
+  cartOpen=!cartOpen;
+  document.getElementById('cartPanel').classList.toggle('open',cartOpen);
+}
+
+function quickRestockBtn(btn){
+  const pid=btn.dataset.pid;
+  const vid=btn.dataset.vid||'';
+  const ptitle=btn.dataset.ptitle||btn.dataset.title||'';
+  const vtitle=btn.dataset.vtitle||'';
+  const img=btn.dataset.img||'';
+  quickRestock(pid,vid,ptitle,img,vtitle);
+}
+
+function quickRestock(productId,variantId,productTitle,image,variantTitle){
+  const prod=allProducts.find(p=>String(p.id)===String(productId));
+  if(!prod)return;
+  // If called from product-level button (no specific variant), show picker
+  if(!variantId&&prod.variantData&&prod.variantData.length>1){
+    openCartVariantPicker(prod);
+    return;
+  }
+  const vTitle=variantTitle||(prod.variantData&&prod.variantData.length===1?prod.variantData[0].title:'Default');
+  const vId=variantId||(prod.variantData&&prod.variantData[0]?prod.variantData[0].id:'');
+  const img=image||(prod.variantData&&prod.variantData[0]?prod.variantData[0].image:null)||prod.image||'';
+  addToCart(String(productId),String(vId),prod.title,vTitle,img);
+}
+
+function addToCart(productId, variantId, productName, variantName, image){
+  // Check if already in cart
+  const key=productId+'-'+variantId;
+  const existing=cartItems.find(i=>i.key===key);
+  if(existing){existing.qty+=50;renderCart();}
+  else{cartItems.push({key,productId,variantId,product:productName,variant:variantName,image,qty:50});}
+  renderCart();
+  // Open cart panel
+  cartOpen=true;
+  document.getElementById('cartPanel').classList.add('open');
+  showToast(variantName+' added to restock order','ok');
+}
+
+function openCartVariantPicker(prod){
+  // Show a quick variant picker in the cart panel
+  cartOpen=true;
+  document.getElementById('cartPanel').classList.add('open');
+  const body=document.getElementById('cartBody');
+  const pickerHtml=`<div style="padding:12px">
+    <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:8px">${prod.title} — select variant:</div>
+    ${(prod.variantData||[]).map(v=>`
+      <div onclick="addToCart('${prod.id}','${v.id}',${JSON.stringify(prod.title)},${JSON.stringify(v.title)},${JSON.stringify(v.image||prod.image||'')})" 
+           style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;margin-bottom:4px;transition:background .12s"
+           onmouseover="this.style.background='#fafaf5'" onmouseout="this.style.background=''">
+        ${v.image?`<img src="${v.image}" style="width:26px;height:26px;border-radius:4px;object-fit:cover;border:1px solid var(--border)">`:'<div style="width:26px;height:26px;border-radius:4px;background:#EAE7D8;flex-shrink:0"></div>'}
+        <span style="font-size:12px;font-weight:500;flex:1">${v.title}</span>
+        <span style="font-size:11px;color:rgba(26,26,24,.4)">${v.qty} in stock</span>
+      </div>`).join('')}
+    <button onclick="renderCart()" style="margin-top:6px;font-size:11px;color:rgba(26,26,24,.4);background:none;border:none;cursor:pointer">← Back</button>
+  </div>`;
+  // Prepend to existing cart
+  const existing=body.innerHTML;
+  body.innerHTML=pickerHtml+(existing.includes('cart-empty')?'':existing);
+}
+
+function updateCartQty(key,delta){
+  const item=cartItems.find(i=>i.key===key);
+  if(!item)return;
+  item.qty=Math.max(1,item.qty+delta);
+  renderCart();
+}
+
+function removeFromCart(key){
+  cartItems=cartItems.filter(i=>i.key!==key);
+  renderCart();
+}
+
+function clearCart(){
+  cartItems=[];
+  renderCart();
+}
+
+function renderCart(){
+  const badge=document.getElementById('fabBadge');
+  const count=document.getElementById('cartCount');
+  const body=document.getElementById('cartBody');
+  const total=cartItems.length;
+  badge.textContent=total;
+  badge.classList.toggle('show',total>0);
+  count.textContent=total+' item'+(total!==1?'s':'');
+  if(!total){body.innerHTML='<div class="cart-empty">No items yet — hit + Restock on any product</div>';return;}
+  body.innerHTML=cartItems.map(item=>{
+    const img=item.image?`<img src="${item.image}" class="cart-item-img" onerror="this.style.display='none'">`:'<div class="cart-item-img-ph"></div>';
+    return`<div class="cart-item">
+      ${img}
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.product}</div>
+        <div class="cart-item-variant">${item.variant}</div>
+      </div>
+      <div class="cart-item-qty">
+        <button class="cart-qty-btn" onclick="updateCartQty('${item.key}',-10)">−</button>
+        <span class="cart-qty-num">${item.qty}</span>
+        <button class="cart-qty-btn" onclick="updateCartQty('${item.key}',10)">+</button>
+      </div>
+      <button class="cart-item-remove" onclick="removeFromCart('${item.key}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+function checkoutCart(){
+  if(!cartItems.length)return;
+  // Transfer cart items into the restock modal order lines
+  currentOrderLines=[...cartItems.map(i=>({
+    productId:i.productId,product:i.product,
+    variant:i.variant,image:i.image,qty:i.qty
+  }))];
+  // Clear cart
+  cartItems=[];
+  renderCart();
+  cartOpen=false;
+  document.getElementById('cartPanel').classList.remove('open');
+  // Open restock modal with pre-filled lines
+  openRestock();
+  // Re-populate the lines (openRestock clears them, so set after)
+  currentOrderLines=[...currentOrderLines];
+  renderOrderLines();
+  if(currentOrderLines.length>0){
+    document.getElementById('orderSettings').style.display='block';
+    document.getElementById('orderDivider').style.display='block';
+  }
+  updateConfirmBtn();
+  // Switch to reorder view
+  // Switch to reorder view
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'reorder'")){
+      setView('reorder',b);
+    }
+  });
+}
+
+
 async function startLoad(){
   const dot=document.getElementById('syncDot');
   dot.className='dot-warn';
@@ -2104,12 +2370,12 @@ function tblHTML(prods,showWh,prefix){
   if(!prods.length)return'<div class="empty-state">No products match this filter.</div>';
   const mx=maxQ(prods);
   return`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:${showWh?'32%':'38%'}">Product</th>
+    <th style="width:${showWh?'34%':'42%'}">Product</th>
     ${showWh?'<th style="width:9%">Markets</th>':''}
-    <th style="width:17%">Stock Level</th>
     <th style="width:7%">Units</th>
     <th style="width:11%">Status</th>
     <th style="width:11%">Demand</th>
+    <th style="width:10%">Restock</th>
   </tr></thead><tbody>${prods.map((p,pi)=>{
     const pct=Math.round((p.qty/mx)*100);
     const fc=p.status==='critical'?'fill-crit':p.status==='low'?'fill-low':'fill-ok';
@@ -2132,12 +2398,15 @@ function tblHTML(prods,showWh,prefix){
       const vpct=Math.round((v.qty/Math.max(mx,1))*100);
       const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:`<div class="var-img-ph"></div>`;
       return`<tr class="variant-row">
-        <td style="padding-left:58px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
+        <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
         ${showWh?'<td></td>':''}
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div></td>
         <td><span class="variant-qty">${v.qty}</span></td>
         <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
         <td></td>
+        <td><button class="btn-restock" data-pid="${p.id}" data-vid="${v.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-vtitle="${v.title.replace(/"/g,'&quot;')}" data-img="${(v.image||p.image||'').replace(/"/g,'&quot;')}" onclick="quickRestockBtn(this)">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          + Restock
+        </button></td>
       </tr>`;
     }).join('')}</tbody>`:'';
     return`<tbody><tr>
@@ -2153,10 +2422,13 @@ function tblHTML(prods,showWh,prefix){
         </div>
       </td>
       ${showWh?`<td>${whDots(p.warehouses)}</td>`:''}
-      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${fc}" style="width:${pct}%"></div></div></div></td>
       <td><span class="qty-num">${p.qty}</span></td>
       <td>${bdg}</td>
       <td><div class="stars">${stars}</div></td>
+      <td><button class="btn-restock" onclick="quickRestock('${p.id.toString().replace(/'/g,"\\'")}','','${p.title.replace(/'/g,"\\'")}',${JSON.stringify(p.image||'')})">
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+        Restock
+      </button></td>
     </tr></tbody>${varRows}`;
   }).join('')}</table></div>`;
 }
@@ -2239,14 +2511,14 @@ function renderReorder(p){
   const {airDate,seaDate}=getETADates();
   document.getElementById('reorderTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
     <th style="width:4%">#</th>
-    <th style="width:30%">Product</th>
-    <th style="width:13%">Stock</th>
+    <th style="width:28%">Product</th>
     <th style="width:6%">Units</th>
     <th style="width:9%">Sold 90d</th>
-    <th style="width:10%">Suggest</th>
+    <th style="width:9%">Suggest</th>
     <th style="width:10%">Status</th>
     <th style="width:9%"><span style="color:#2D5FA6">✈ Air ETA</span></th>
     <th style="width:9%"><span style="color:#3D7A5A">⛵ Sea ETA</span></th>
+    <th style="width:9%">Restock</th>
   </tr></thead><tbody>${list.map((x,i)=>{
     const imgUrl=x.image||'';
     const imgTag=imgUrl?`<img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'" style="flex-shrink:0">`:`<div class="prod-img-placeholder" style="flex-shrink:0"></div>`;
@@ -2261,13 +2533,16 @@ function renderReorder(p){
         </div>
       </div>
     </td>
-    <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${x.status==='critical'?'fill-crit':'fill-low'}" style="width:${Math.round((x.qty/mx)*100)}%"></div></div></div></td>
     <td><span class="qty-num">${x.qty}</span></td>
     <td><span class="sales-chip">${x.sold90}</span></td>
     <td style="font-size:11px;color:rgba(26,26,24,.5);font-family:'DM Mono',monospace">${Math.max(50-x.qty,10)} units</td>
     <td><span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span></td>
     <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#2D5FA6">${airDate}</td>
     <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#3D7A5A">${seaDate}</td>
+    <td><button class="btn-restock" data-pid="${x.id}" data-img="${(x.image||'').replace(/"/g,'&quot;')}" data-title="${x.title.replace(/"/g,'&quot;')}" onclick="quickRestockBtn(this)">
+      <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+      + Restock
+    </button></td>
   </tr>`;
   }).join('')}</tbody></table></div>`;
 }
