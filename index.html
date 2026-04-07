@@ -1947,39 +1947,72 @@ function toggleCart(){
 }
 
 function quickRestockBtn(btn){
-  const pid=btn.dataset.pid;
-  const vid=btn.dataset.vid||'';
-  const ptitle=btn.dataset.ptitle||btn.dataset.title||'';
-  const vtitle=btn.dataset.vtitle||'';
-  const img=btn.dataset.img||'';
+  const pid=String(btn.dataset.pid||'');
+  const vid=String(btn.dataset.vid||'');
+  const prod=allProducts.find(p=>String(p.id)===pid);
+  if(!prod){console.warn('[Restock] Product not found:',pid,allProducts.map(p=>p.id));return;}
+
   if(vid){
-    // Variant-level button — go straight to qty picker for this specific variant
-    const prod=allProducts.find(p=>String(p.id)===String(pid));
-    if(!prod)return;
-    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===String(vid));
-    if(!v)return;
-    cartPickerState={prod,variant:String(v.id)};
-    cartOpen=true;
-    document.getElementById('cartPanel').classList.add('open');
-    _renderPicker();
+    // Variant button — jump straight to qty step in modal
+    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===vid);
+    if(!v){console.warn('[Restock] Variant not found:',vid);return;}
+    // Open modal and pre-select product + variant
+    openRestockForVariant(prod,v);
   } else {
-    // Product-level button — show variant picker (or qty picker if single variant)
-    quickRestock(pid,'',ptitle,img,'');
+    // Product button — open modal and pre-select product, show variant grid
+    openRestockForProduct(prod);
   }
 }
 
 function quickRestock(productId,variantId,productTitle,image,variantTitle){
+  // Legacy call — delegate to quickRestockBtn logic
   const prod=allProducts.find(p=>String(p.id)===String(productId));
   if(!prod)return;
-  // If called from product-level button (no specific variant), show picker
-  if(!variantId&&prod.variantData&&prod.variantData.length>1){
-    openCartVariantPicker(prod);
-    return;
+  if(variantId){
+    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===String(variantId));
+    if(v)openRestockForVariant(prod,v);
+  } else {
+    openRestockForProduct(prod);
   }
-  const vTitle=variantTitle||(prod.variantData&&prod.variantData.length===1?prod.variantData[0].title:'Default');
-  const vId=variantId||(prod.variantData&&prod.variantData[0]?prod.variantData[0].id:'');
-  const img=image||(prod.variantData&&prod.variantData[0]?prod.variantData[0].image:null)||prod.image||'';
-  addToCart(String(productId),String(vId),prod.title,vTitle,img);
+}
+
+function openRestockForProduct(prod){
+  // Open the restock modal and auto-select this product
+  openRestock();
+  // Simulate selecting the product
+  restockState.product=prod;
+  restockState.variant=null;
+  document.getElementById('productSearch').style.display='none';
+  document.getElementById('productDropdown').classList.remove('open');
+  const imgTag=prod.image
+    ?`<img src="${prod.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`
+    :'<div class="selected-product-ph"></div>';
+  document.getElementById('selectedProductWrap').innerHTML=`
+    <div class="selected-product">
+      ${imgTag}
+      <div class="selected-name">${prod.title}</div>
+      <span class="selected-clear" onclick="clearProduct()">✕ Change</span>
+    </div>`;
+  document.getElementById('selectedProductWrap').style.display='block';
+  renderVariantGrid(prod);
+  // Switch to reorder view and open modal
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'reorder'")){setView('reorder',b);}
+  });
+}
+
+function openRestockForVariant(prod,v){
+  openRestockForProduct(prod);
+  // Also auto-select the specific variant
+  setTimeout(()=>{
+    restockState.variant=v;
+    document.querySelectorAll('.var-select-row').forEach((r,i)=>{
+      const vd=prod.variantData[i];
+      if(vd&&String(vd.id)===String(v.id))r.classList.add('selected');
+    });
+    document.getElementById('qtySection').style.display='block';
+    document.getElementById('addLineBtnRow').style.display='block';
+  },50);
 }
 
 function addToCart(productId, variantId, productName, variantName, image){
