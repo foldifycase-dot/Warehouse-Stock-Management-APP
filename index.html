@@ -415,6 +415,12 @@ td:first-child{padding-left:16px;}
 .filter-clear:hover{color:var(--red);background:rgba(201,64,64,.06);}
 .filter-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(200,169,110,.12);color:var(--gold-d);border:1px solid rgba(200,169,110,.25);}
 
+
+/* DELIVERY CONFIRM */
+.po-group-deliver{font-size:10px;padding:3px 9px;border:1px solid rgba(61,122,90,.35);border-radius:5px;background:rgba(61,122,90,.06);cursor:pointer;color:var(--green);font-family:"Inter",sans-serif;font-weight:600;transition:all .15s;margin-left:4px;}
+.po-group-deliver:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.po-group-delivered{font-size:10px;color:rgba(26,26,24,.35);font-weight:500;margin-left:4px;font-style:italic;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -482,13 +488,13 @@ td:first-child{padding-left:16px;}
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="2" rx="1"/><rect x="1" y="7" width="14" height="2" rx="1"/><rect x="1" y="11" width="14" height="2" rx="1"/></svg>
         All Stock
       </button>
-      <button class="nav-btn" onclick="setView('reorder',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2l1.8 3.6L14 6.3l-3 2.9.7 4.1L8 11.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
-        Reorder Queue
-      </button>
       <button class="nav-btn" onclick="setView('popular',this)">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 13l2-5 2 2 2-4 2 3 2-6 2 10H2z"/></svg>
         Top Sellers
+      </button>
+      <button class="nav-btn" onclick="setView('reorder',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2l1.8 3.6L14 6.3l-3 2.9.7 4.1L8 11.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        Reorder Queue
       </button>
     </div>
 
@@ -1379,6 +1385,109 @@ async function resendToSupplier(orderId){
   if(order.sent)showToast('Purchase order sent to '+email,'ok');
 }
 
+
+async function confirmDelivery(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+
+  // Ask for the warehouse team member email to notify
+  const notifyEmail=prompt('Email address of warehouse member to notify (to update stock in Shopify):', localStorage.getItem('fc_delivery_notify')||'');
+  if(!notifyEmail||!notifyEmail.includes('@'))return;
+
+  // Remember for next time
+  try{localStorage.setItem('fc_delivery_notify',notifyEmail);}catch(e){}
+
+  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  const deliveredDate=fmt(new Date());
+  const fromEmail=document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au';
+
+  // Build the stock update reminder email
+  const linesList=order.lines.map(l=>`
+    <tr style="border-top:1px solid #EDEAE0">
+      <td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18">${l.product}</td>
+      <td style="padding:10px 14px;font-size:12px;color:#555">${l.variant}</td>
+      <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#1A1A18;text-align:center">${l.qty}</td>
+    </tr>`).join('');
+
+  const emailHtml=`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#E8E5DB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#E8E5DB;padding:32px 0">
+<tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+  <tr><td style="background:#1A1A18;border-radius:12px 12px 0 0;padding:22px 32px;border-bottom:3px solid #C8A96E">
+    <div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:.08em">FOLDIFYCASE</div>
+    <div style="color:#C8A96E;font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px">Stock Update Required — ${order.id}</div>
+  </td></tr>
+
+  <tr><td style="background:#EAF3DE;border:1px solid #C5DFA8;padding:16px 32px">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:18px;padding-right:10px">📦</td>
+      <td>
+        <div style="font-size:13px;font-weight:700;color:#2A5C0A">Stock has arrived — please update Shopify</div>
+        <div style="font-size:12px;color:#3D7A2A;margin-top:2px">Order ${order.id} was confirmed delivered on ${deliveredDate}. Update the inventory quantities below in Shopify.</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <tr><td style="background:#fff;padding:20px 32px">
+    <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:12px">Items to update in Shopify</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #EDEAE0;border-radius:8px;overflow:hidden">
+      <thead><tr style="background:#EAE7D8">
+        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left">Product</th>
+        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left">Variant</th>
+        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:center">Qty received</th>
+      </tr></thead>
+      <tbody>${linesList}</tbody>
+    </table>
+  </td></tr>
+
+  <tr><td style="background:#F5F3E9;padding:20px 32px;text-align:center;border-top:1px solid #EDEAE0">
+    <div style="font-size:12px;color:#555;margin-bottom:14px">Go to Shopify Admin → Products → update inventory for each item above.</div>
+    <a href="https://admin.shopify.com/store/scnd9y-a1/products" style="display:inline-block;background:#1A1A18;color:#C8A96E;font-size:12px;font-weight:700;letter-spacing:.05em;padding:12px 28px;border-radius:7px;text-decoration:none">
+      → Open Shopify Inventory
+    </a>
+  </td></tr>
+
+  <tr><td style="background:#1A1A18;border-radius:0 0 12px 12px;padding:14px 32px">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:10px;color:rgba(255,255,255,.35)">FoldifyCase Warehouse · Delivery notification</td>
+      <td align="right" style="font-size:10px;color:rgba(200,169,110,.5)">${order.id} · ${deliveredDate}</td>
+    </tr></table>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>`;
+
+  try{
+    showToast('Sending delivery notification…','ok');
+    const r=await fetch(`${PROXY}?service=alert`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        to:[notifyEmail],
+        from_name:'FoldifyCase Warehouse',
+        from_email:fromEmail,
+        subject:`Action Required: Update Shopify Stock — Order ${order.id} Delivered`,
+        custom_html:emailHtml,
+        type:'delivery',warehouse:'',products:[]
+      })
+    });
+    const result=await r.json().catch(()=>({}));
+    if(r.ok&&result.success){
+      order.delivered=true;
+      order.deliveredDate=deliveredDate;
+      order.notifiedEmail=notifyEmail;
+      renderPOLog();
+      showToast(`Delivery confirmed · ${notifyEmail} notified to update Shopify`,'ok');
+    } else {
+      showToast('Email failed: '+(result.error||'Check Vercel logs'),'err');
+    }
+  }catch(e){
+    showToast('Network error: '+e.message,'err');
+  }
+}
+
 function renderPOLog(){
   const el=document.getElementById('poLog');
   if(!poOrders.length){
@@ -1389,6 +1498,9 @@ function renderPOLog(){
     const sendBtn=o.sent
       ?`<span class="po-group-sent">✓ Sent to supplier</span>`
       :`<button class="po-group-send" onclick="resendToSupplier('${o.id}')">✉ Send to supplier</button>`;
+    const deliverBtn=o.delivered
+      ?`<span class="po-group-delivered">✓ Delivered ${o.deliveredDate}</span>`
+      :`<button class="po-group-deliver" onclick="confirmDelivery('${o.id}')">📦 Confirm Delivery</button>`;
     const lines=o.lines.map(l=>{
       const img=l.image?`<img src="${l.image}" class="po-line-img" onerror="this.style.display='none'">`:'<div class="po-line-img-ph"></div>';
       return`<div class="po-line">
@@ -1409,6 +1521,7 @@ function renderPOLog(){
         <span class="po-group-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
         <div class="po-group-eta ${o.ship}" style="margin:0 8px">${o.eta}</div>
         ${sendBtn}
+        ${deliverBtn}
       </div>
       ${lines}
     </div>`;
