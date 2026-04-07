@@ -1320,31 +1320,40 @@ async function sendToSupplier(order){
 </body></html>`;
 
   try{
-    const fromEmail=document.getElementById('fromEmail')?.value||'alerts@foldifycase.com';
+    const fromEmail=document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au';
+    const payload={
+      to:[order.supplierEmail],
+      from_name:'FoldifyCase Warehouse',
+      from_email:fromEmail,
+      subject:`Purchase Order ${order.id} — FoldifyCase`,
+      custom_html:emailBody,
+      type:'supplier',
+      warehouse:'',
+      products:[]
+    };
+    console.log('[PO Email] Sending to:',order.supplierEmail,'from:',fromEmail,'payload size:',JSON.stringify(payload).length,'chars');
     const r=await fetch(`${PROXY}?service=alert`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        to:[order.supplierEmail],
-        from_name:'FoldifyCase Warehouse',
-        from_email:fromEmail,
-        subject:`Purchase Order ${order.id} — FoldifyCase`,
-        custom_html:emailBody,
-        type:'supplier',
-        warehouse:'',
-        products:[]
-      })
+      body:JSON.stringify(payload)
     });
-    const result=await r.json().catch(()=>({}));
-    if(r.ok&&!result.error){
+    const rawText=await r.text();
+    console.log('[PO Email] HTTP status:',r.status,'response:',rawText);
+    let result={};
+    try{result=JSON.parse(rawText);}catch(e){result={raw:rawText};}
+    if(r.ok&&result.success){
       order.sent=true;
+      showToast('Supplier email sent to '+order.supplierEmail,'ok');
     } else {
-      console.warn('Supplier email failed:',result);
-      showToast('Email failed: '+(result.error||result.message||'Check Vercel logs'),'err');
+      order.sent=false;
+      const errMsg=result.error||result.message||result.raw||'Unknown error — check Vercel logs';
+      console.error('[PO Email] Failed:',result);
+      showToast('Email failed: '+errMsg,'err');
+      alert('Supplier email failed:\n\n'+errMsg+'\n\nCheck browser console (F12) and Vercel function logs for details.');
     }
   }catch(e){
-    console.warn('Supplier email error:',e);
-    showToast('Email error: '+e.message,'err');
+    console.error('[PO Email] Network error:',e);
+    showToast('Network error: '+e.message,'err');
   }
 }
 
