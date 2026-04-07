@@ -1952,7 +1952,20 @@ function quickRestockBtn(btn){
   const ptitle=btn.dataset.ptitle||btn.dataset.title||'';
   const vtitle=btn.dataset.vtitle||'';
   const img=btn.dataset.img||'';
-  quickRestock(pid,vid,ptitle,img,vtitle);
+  if(vid){
+    // Variant-level button — go straight to qty picker for this specific variant
+    const prod=allProducts.find(p=>String(p.id)===String(pid));
+    if(!prod)return;
+    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===String(vid));
+    if(!v)return;
+    cartPickerState={prod,variant:String(v.id)};
+    cartOpen=true;
+    document.getElementById('cartPanel').classList.add('open');
+    _renderPicker();
+  } else {
+    // Product-level button — show variant picker (or qty picker if single variant)
+    quickRestock(pid,'',ptitle,img,'');
+  }
 }
 
 function quickRestock(productId,variantId,productTitle,image,variantTitle){
