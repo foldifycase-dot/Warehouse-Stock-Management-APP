@@ -828,71 +828,92 @@ td:first-child{padding-left:16px;}
 
 <!-- RESTOCK MODAL -->
 <div class="modal-overlay" id="restockModal">
-  <div class="modal">
+  <div class="modal" style="width:620px;max-width:96vw">
     <div class="modal-hdr">
       <div class="modal-title">Create Restock Order</div>
       <button class="modal-close" onclick="closeRestock()">×</button>
     </div>
     <div class="modal-body">
 
-      <!-- PRODUCT SEARCH -->
+      <!-- ORDER LINES -->
       <div class="modal-section">
-        <div class="modal-label">Product</div>
-        <div id="selectedProductWrap" style="display:none"></div>
-        <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
-        <div class="modal-dropdown" id="productDropdown"></div>
+        <div class="modal-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          Order lines
+          <span id="lineCountBadge" style="font-size:10px;background:#EAE7D8;padding:1px 7px;border-radius:10px;font-weight:400;color:rgba(26,26,24,.5)">0 items</span>
+        </div>
+        <div class="order-lines" id="orderLines" style="display:none"></div>
+        <button class="add-line-btn" id="addLineBtn" onclick="showAddLine()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          Add product
+        </button>
       </div>
 
-      <!-- VARIANT SELECT -->
-      <div class="modal-section" id="variantSection" style="display:none">
-        <div class="modal-label">Variant</div>
-        <div class="variant-select-grid" id="variantGrid"></div>
-      </div>
-
-      <!-- QUANTITY -->
-      <div class="modal-section" id="qtySection" style="display:none">
-        <div class="modal-label">Quantity to order</div>
-        <div class="qty-row">
-          <button class="qty-btn" onclick="adjQty(-10)">−</button>
-          <input type="number" class="qty-input" id="restockQty" value="50" min="1">
-          <button class="qty-btn" onclick="adjQty(10)">+</button>
-          <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+      <!-- ADD PRODUCT PANEL -->
+      <div id="addLinePanel" style="display:none">
+        <div class="modal-section">
+          <div class="modal-label">Search product</div>
+          <div id="selectedProductWrap" style="display:none"></div>
+          <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
+          <div class="modal-dropdown" id="productDropdown"></div>
+        </div>
+        <div class="modal-section" id="variantSection" style="display:none">
+          <div class="modal-label">Select variant</div>
+          <div class="variant-select-grid" id="variantGrid"></div>
+        </div>
+        <div class="modal-section" id="qtySection" style="display:none">
+          <div class="modal-label">Quantity</div>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adjQty(-10)">−</button>
+            <input type="number" class="qty-input" id="restockQty" value="50" min="1">
+            <button class="qty-btn" onclick="adjQty(10)">+</button>
+            <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+          </div>
+        </div>
+        <div class="modal-section" id="addLineBtnRow" style="display:none">
+          <div style="display:flex;gap:8px">
+            <button class="btn-sol gold" onclick="addLineToOrder()" style="flex:1">Add to order</button>
+            <button class="btn-out" onclick="cancelAddLine()" style="flex:1">Cancel</button>
+          </div>
         </div>
       </div>
 
-      <!-- SHIPPING METHOD -->
-      <div class="modal-section" id="shipSection" style="display:none">
-        <div class="modal-label">Shipping method</div>
-        <div class="ship-toggle">
-          <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
-            <div class="ship-opt-label">✈ By Air</div>
-            <div class="ship-opt-eta air" id="modalAirEta">—</div>
-            <div style="font-size:10px;color:rgba(26,26,24,.4);margin-top:2px">Fast · higher cost</div>
+      <div class="modal-divider" id="orderDivider" style="display:none"></div>
+
+      <!-- ORDER SETTINGS -->
+      <div id="orderSettings" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Shipping method</div>
+            <div class="ship-toggle">
+              <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
+                <div class="ship-opt-label">✈ By Air</div>
+                <div class="ship-opt-eta air" id="modalAirEta">—</div>
+              </div>
+              <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
+                <div class="ship-opt-label">⛵ By Sea</div>
+                <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
+              </div>
+            </div>
           </div>
-          <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
-            <div class="ship-opt-label">⛵ By Sea</div>
-            <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
-            <div style="font-size:10px;color:rgba(26,26,24,.4);margin-top:2px">Slow · lower cost</div>
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Order date</div>
+            <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="margin-bottom:10px">
+            <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
+            <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality…">
           </div>
         </div>
-      </div>
-
-      <!-- ORDER DATE -->
-      <div class="modal-section" id="orderDateSection" style="display:none">
-        <div class="modal-label">Order date</div>
-        <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="max-width:200px">
-      </div>
-
-      <!-- NOTES -->
-      <div class="modal-section" id="notesSection" style="display:none">
-        <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
-        <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality on arrival…">
+        <div class="supplier-section">
+          <div class="supplier-title">Send to supplier</div>
+          <input type="email" class="supplier-input" id="supplierEmail" placeholder="supplier@company.com">
+          <input type="text" class="supplier-input" id="supplierName" placeholder="Supplier / company name (optional)">
+          <div class="supplier-hint">A branded purchase order email will be sent to your supplier when you confirm.</div>
+        </div>
       </div>
 
     </div>
     <div class="modal-footer">
       <button class="btn-out" onclick="closeRestock()">Cancel</button>
-      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Confirm Order</button>
+      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Place Order</button>
     </div>
   </div>
 </div>
