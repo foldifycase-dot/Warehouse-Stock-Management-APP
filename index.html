@@ -232,6 +232,29 @@ td:first-child{padding-left:16px;}
 .step-text{font-size:12px;color:rgba(26,26,24,.6);line-height:1.6;padding-top:3px;}
 .inline-code{font-family:"DM Mono",monospace;font-size:11px;background:#EAE7D8;padding:1px 5px;border-radius:3px;color:var(--ink);}
 
+
+/* PRODUCT IMAGE THUMBNAIL */
+.prod-img{width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:#EAE7D8;display:block;}
+.prod-img-wrap{display:flex;align-items:center;gap:10px;}
+.prod-img-placeholder{width:36px;height:36px;border-radius:5px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+
+/* VARIANT DROPDOWN */
+.prod-expand{cursor:pointer;user-select:none;}
+.prod-expand-arrow{display:inline-block;margin-left:5px;font-size:9px;color:rgba(26,26,24,.35);transition:transform .18s;}
+.prod-expand-arrow.open{transform:rotate(90deg);}
+.variant-rows{display:none;background:#fafaf5;}
+.variant-rows.open{display:table-row-group;}
+.variant-row td{padding:5px 12px 5px 64px;font-size:11px;border-bottom:1px solid var(--border);color:rgba(26,26,24,.7);}
+.variant-row:last-child td{border-bottom:none;}
+.variant-name{font-weight:500;color:var(--ink);}
+.variant-qty{font-family:"DM Mono",monospace;font-weight:600;font-size:12px;}
+
+/* PERIOD TABS for Top Sellers */
+.period-tabs{display:flex;gap:4px;margin-bottom:12px;}
+.period-tab{padding:5px 14px;border:1.5px solid var(--border2);border-radius:20px;font-size:12px;font-weight:500;font-family:"Inter",sans-serif;color:rgba(26,26,24,.55);cursor:pointer;transition:all .15s;background:#fff;}
+.period-tab:hover{border-color:var(--ink);color:var(--ink);}
+.period-tab.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -305,7 +328,7 @@ td:first-child{padding-left:16px;}
       </button>
       <button class="nav-btn" onclick="setView('popular',this)">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 13l2-5 2 2 2-4 2 3 2-6 2 10H2z"/></svg>
-        Top Sellers <span style="font-size:9px;color:rgba(255,255,255,.3);margin-left:3px">90d</span>
+        Top Sellers
       </button>
     </div>
 
@@ -437,10 +460,15 @@ td:first-child{padding-left:16px;}
       <div class="page-hdr">
         <div>
           <div class="page-title">TOP <em>SELLERS</em></div>
-          <div class="page-sub" id="popularSub">Ranked by units sold — last 90 days · live from Shopify orders</div>
+          <div class="page-sub" id="popularSub">Ranked by units sold · live from Shopify orders</div>
         </div>
       </div>
-      <div class="card"><div id="popularTable"><div class="empty-state"><div class="spinner"></div>Fetching 90-day sales data…</div></div></div>
+      <div class="period-tabs">
+        <button class="period-tab" onclick="setPeriod(30,this)">30 days</button>
+        <button class="period-tab" onclick="setPeriod(60,this)">60 days</button>
+        <button class="period-tab active" onclick="setPeriod(90,this)">90 days</button>
+      </div>
+      <div class="card"><div id="popularTable"><div class="empty-state"><div class="spinner"></div>Fetching sales data…</div></div></div>
     </div>
 
     <!-- EMAIL ALERTS -->
@@ -585,7 +613,7 @@ td:first-child{padding-left:16px;}
 
 <script>
 const PROXY = 'https://warehouse-stock-management-app.vercel.app/api/proxy';
-let allProducts = [], salesData = {}, activeWarehouse = 'us', activeFilter = 'all';
+let allProducts = [], salesData = {}, salesDataAll = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
 let critT = 5, lowT = 20, emailRecipients = [], alertLog = [];
 
 const WH = {
@@ -638,8 +666,28 @@ async function startLoad(){
 }
 
 function processSales(orders){
-  salesData={};
+  salesData={};salesDataAll=orders;
   orders.forEach(o=>(o.line_items||[]).forEach(i=>{const id=String(i.product_id);salesData[id]=(salesData[id]||0)+i.quantity;}));
+}
+
+function salesForPeriod(days){
+  const since=Date.now()-days*24*60*60*1000;
+  const counts={};
+  salesDataAll.forEach(o=>{
+    const t=new Date(o.created_at).getTime();
+    if(t>=since)(o.line_items||[]).forEach(i=>{const id=String(i.product_id);counts[id]=(counts[id]||0)+i.quantity;});
+  });
+  return counts;
+}
+
+function setPeriod(days,el){
+  activePeriod=days;
+  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('popularSub').textContent=`Ranked by units sold — last ${days} days · live from Shopify`;
+  const counts=salesForPeriod(days);
+  const p=filtered().map(x=>({...x,soldN:counts[String(x.id)]||0}));
+  renderPopularWithData(p,days);
 }
 
 function processProducts(raw){
@@ -651,7 +699,26 @@ function processProducts(raw){
     let wh=parseWH(p.tags);
     if(noTags&&qty>0)wh=['us','uk','au'];
     if(!wh.length)return null;
-    return{id:p.id,title:p.title,qty,variants:v.length,status:status(qty),sold90:salesData[String(p.id)]||0,price:parseFloat(v[0]?.price||0).toFixed(2),warehouses:wh};
+    const variantData=v.map(x=>({
+      title:x.title,
+      qty:parseInt(x.inventory_quantity)||0,
+      status:status(parseInt(x.inventory_quantity)||0),
+      price:parseFloat(x.price||0).toFixed(2),
+      tracked:x.inventory_management==='shopify'
+    }));
+    return{
+      id:p.id,
+      title:p.title,
+      handle:p.handle||'',
+      image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
+      qty,
+      variants:v.length,
+      variantData,
+      status:status(qty),
+      sold90:salesData[String(p.id)]||0,
+      price:parseFloat(v[0]?.price||0).toFixed(2),
+      warehouses:wh
+    };
   }).filter(Boolean);
 }
 
@@ -713,13 +780,13 @@ function tblHTML(prods,showWh){
   if(!prods.length)return'<div class="empty-state">No products match this filter.</div>';
   const mx=maxQ(prods);
   return`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:${showWh?'30%':'36%'}">Product</th>
+    <th style="width:${showWh?'32%':'38%'}">Product</th>
     ${showWh?'<th style="width:9%">Markets</th>':''}
-    <th style="width:18%">Stock Level</th>
+    <th style="width:17%">Stock Level</th>
     <th style="width:7%">Units</th>
-    <th style="width:12%">Status</th>
-    <th style="width:12%">Demand</th>
-  </tr></thead><tbody>${prods.map(p=>{
+    <th style="width:11%">Status</th>
+    <th style="width:11%">Demand</th>
+  </tr></thead><tbody>${prods.map((p,pi)=>{
     const pct=Math.round((p.qty/mx)*100);
     const fc=p.status==='critical'?'fill-crit':p.status==='low'?'fill-low':'fill-ok';
     const bdg=p.status==='critical'
@@ -729,15 +796,51 @@ function tblHTML(prods,showWh){
       :'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
     const sn=Math.min(5,Math.ceil((p.sold90||0)/40));
     const stars=Array.from({length:5},(_,i)=>`<svg width="9" height="9" viewBox="0 0 10 10" fill="${i<sn?'#C8A96E':'#DDD'}"><polygon points="5,1 6.5,4 9,4 7,6 8,9 5,7 2,9 3,6 1,4 3.5,4"/></svg>`).join('');
-    return`<tr>
-      <td><div class="pname">${p.title}</div><div class="pmeta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div></td>
+    const imgUrl=p.image||'';
+    const imgTag=imgUrl
+      ?`<a href="https://scnd9y-a1.myshopify.com/products/${p.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.parentElement.innerHTML='<div class=\"prod-img-placeholder\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"rgba(26,26,24,.25)\"><rect x=\"2\" y=\"2\" width=\"12\" height=\"12\" rx=\"2\"/></svg></div>'"></a>`
+      :`<div class="prod-img-placeholder"><svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><rect x="2" y="2" width="12" height="12" rx="2"/></svg></div>`;
+    const hasVars=p.variantData&&p.variantData.length>1;
+    const varRows=hasVars?`<tbody class="variant-rows" id="vr-${pi}">${p.variantData.map(v=>{
+      const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
+      const vfc=v.status==='critical'?'fill-crit':v.status==='low'?'fill-low':'fill-ok';
+      const vpct=Math.round((v.qty/Math.max(mx,1))*100);
+      return`<tr class="variant-row"><td colspan="${showWh?6:5}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="variant-name">${v.title}</span>
+          <div class="bar-wrap" style="flex:1;min-width:80px;max-width:140px"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div>
+          <span class="variant-qty">${v.qty}</span>
+          <span class="badge ${vs}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span>
+        </div>
+      </td></tr>`;
+    }).join('')}</tbody>`:'';
+    return`<tbody><tr>
+      <td>
+        <div class="prod-img-wrap">
+          ${imgTag}
+          <div>
+            <div class="pname prod-expand" onclick="toggleVariants(${pi})" title="${hasVars?'Click to see variants':''}">
+              ${p.title}${hasVars?`<span class="prod-expand-arrow" id="arr-${pi}">▶</span>`:''}
+            </div>
+            <div class="pmeta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div>
+          </div>
+        </div>
+      </td>
       ${showWh?`<td>${whDots(p.warehouses)}</td>`:''}
       <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${fc}" style="width:${pct}%"></div></div></div></td>
       <td><span class="qty-num">${p.qty}</span></td>
       <td>${bdg}</td>
       <td><div class="stars">${stars}</div></td>
-    </tr>`;
-  }).join('')}</tbody></table></div>`;
+    </tr></tbody>${varRows}`;
+  }).join('')}</table></div>`;
+}
+
+function toggleVariants(pi){
+  const rows=document.getElementById('vr-'+pi);
+  const arrow=document.getElementById('arr-'+pi);
+  if(!rows)return;
+  const open=rows.classList.toggle('open');
+  if(arrow)arrow.classList.toggle('open',open);
 }
 
 function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all');}
@@ -776,19 +879,27 @@ function renderReorder(p){
 }
 
 function renderPopular(p){
-  const list=[...p].sort((a,b)=>b.sold90-a.sold90);
-  const mx=Math.max(...list.map(x=>x.sold90),1);
+  const counts=salesForPeriod(activePeriod);
+  const enriched=p.map(x=>({...x,soldN:counts[String(x.id)]||0}));
+  renderPopularWithData(enriched,activePeriod);
+}
+
+function renderPopularWithData(p,days){
+  const list=[...p].sort((a,b)=>b.soldN-a.soldN);
+  const mx=Math.max(...list.map(x=>x.soldN),1);
   document.getElementById('popularTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:5%">Rank</th><th style="width:33%">Product</th><th style="width:12%">Sold 90d</th>
-    <th style="width:14%">Sales Trend</th><th style="width:8%">Stock</th><th style="width:12%">Status</th><th style="width:16%">Action</th>
+    <th style="width:5%">Rank</th><th style="width:36%">Product</th><th style="width:11%">Sold ${days}d</th>
+    <th style="width:14%">Sales Trend</th><th style="width:8%">Stock</th><th style="width:12%">Status</th><th style="width:14%">Action</th>
   </tr></thead><tbody>${list.map((x,i)=>{
+    const imgUrl=x.image||'';
+    const imgTag=imgUrl?`<a href="https://scnd9y-a1.myshopify.com/products/${x.handle}" target="_blank"><img src="${imgUrl}" class="prod-img" alt="" style="margin-right:8px;vertical-align:middle"></a>`:'';
     const bdg=x.status==='critical'?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>':x.status==='low'?'<span class="badge b-low"><div class="bdot"></div>Low</span>':'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
-    const act=x.status!=='ok'&&x.sold90>50?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
+    const act=x.status!=='ok'&&x.soldN>20?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
     return`<tr>
       <td style="font-family:'DM Mono',monospace;font-weight:500;font-size:12px;color:rgba(26,26,24,.4)">#${i+1}</td>
-      <td><div class="pname">${x.title}</div><div class="pmeta">$${x.price}</div></td>
-      <td><span class="sales-chip">${x.sold90}</span></td>
-      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill fill-sales" style="width:${Math.round((x.sold90/mx)*100)}%"></div></div></div></td>
+      <td><div class="prod-img-wrap">${imgTag}<div><div class="pname">${x.title}</div><div class="pmeta">$${x.price}</div></div></div></td>
+      <td><span class="sales-chip">${x.soldN}</span></td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill fill-sales" style="width:${Math.round((x.soldN/mx)*100)}%"></div></div></div></td>
       <td><span class="qty-num">${x.qty}</span></td>
       <td>${bdg}</td>
       <td>${act}</td>
