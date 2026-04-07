@@ -1,9 +1,0 @@
-{
-  "name": "foldifycase-warehouse",
-  "version": "1.0.0",
-  "description": "FoldifyCase warehouse stock management proxy",
-  "private": true,
-  "engines": {
-    "node": ">=18"
-  }
-}
