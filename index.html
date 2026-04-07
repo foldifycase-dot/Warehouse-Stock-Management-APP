@@ -1985,11 +1985,16 @@ function processProducts(raw){
         });
 
         const hasLocInfo=(locData._stocked||[]).length>0;
+        const variantInInventoryData=inventoryByVariant.hasOwnProperty(iid);
         const totalLocQty=varWarehouses.reduce((s,wh)=>s+(locData[wh]||0),0);
-        // Only exclude if we have location data AND variant is not stocked anywhere locally
-        if(hasLocInfo&&varWarehouses.length===0)return null;
-        const fallbackQty=parseInt(x.inventory_quantity)||0;
 
+        // Exclude if location data exists but variant has no local warehouse presence
+        if(hasLocInfo&&varWarehouses.length===0)return null;
+        // Exclude if locationMap is loaded but variant has NO entry in inventory data at all
+        // → means it was never set up at any local warehouse → it's dropship
+        if(!variantInInventoryData)return null;
+
+        const fallbackQty=parseInt(x.inventory_quantity)||0;
         return{
           id:String(x.id),inventoryItemId:iid,title:x.title,
           qty:hasLocInfo?totalLocQty:fallbackQty,
