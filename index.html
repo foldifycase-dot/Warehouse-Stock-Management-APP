@@ -244,7 +244,7 @@ td:first-child{padding-left:16px;}
 .prod-expand-arrow.open{transform:rotate(90deg);}
 .variant-rows{display:none;background:#fafaf5;}
 .variant-rows.open{display:table-row-group;}
-.variant-row td{padding:5px 12px 5px 64px;font-size:11px;border-bottom:1px solid var(--border);color:rgba(26,26,24,.7);}
+.variant-row td{padding:6px 12px;font-size:11px;border-bottom:1px solid var(--border);color:rgba(26,26,24,.7);background:#fafaf5;}
 .variant-row:last-child td{border-bottom:none;}
 .variant-name{font-weight:500;color:var(--ink);}
 .variant-qty{font-family:"DM Mono",monospace;font-weight:600;font-size:12px;}
@@ -798,21 +798,22 @@ function tblHTML(prods,showWh){
     const stars=Array.from({length:5},(_,i)=>`<svg width="9" height="9" viewBox="0 0 10 10" fill="${i<sn?'#C8A96E':'#DDD'}"><polygon points="5,1 6.5,4 9,4 7,6 8,9 5,7 2,9 3,6 1,4 3.5,4"/></svg>`).join('');
     const imgUrl=p.image||'';
     const imgTag=imgUrl
-      ?`<a href="https://scnd9y-a1.myshopify.com/products/${p.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.parentElement.innerHTML='<div class=\"prod-img-placeholder\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"rgba(26,26,24,.25)\"><rect x=\"2\" y=\"2\" width=\"12\" height=\"12\" rx=\"2\"/></svg></div>'"></a>`
+      ?`<a href="https://scnd9y-a1.myshopify.com/products/${p.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'"></a>`
       :`<div class="prod-img-placeholder"><svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><rect x="2" y="2" width="12" height="12" rx="2"/></svg></div>`;
+
     const hasVars=p.variantData&&p.variantData.length>1;
     const varRows=hasVars?`<tbody class="variant-rows" id="vr-${pi}">${p.variantData.map(v=>{
       const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
       const vfc=v.status==='critical'?'fill-crit':v.status==='low'?'fill-low':'fill-ok';
       const vpct=Math.round((v.qty/Math.max(mx,1))*100);
-      return`<tr class="variant-row"><td colspan="${showWh?6:5}">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span class="variant-name">${v.title}</span>
-          <div class="bar-wrap" style="flex:1;min-width:80px;max-width:140px"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div>
-          <span class="variant-qty">${v.qty}</span>
-          <span class="badge ${vs}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span>
-        </div>
-      </td></tr>`;
+      return`<tr class="variant-row">
+        <td style="padding-left:58px"><span class="variant-name">${v.title}</span></td>
+        ${showWh?'<td></td>':''}
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div></td>
+        <td><span class="variant-qty">${v.qty}</span></td>
+        <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
+        <td></td>
+      </tr>`;
     }).join('')}</tbody>`:'';
     return`<tbody><tr>
       <td>
@@ -892,7 +893,7 @@ function renderPopularWithData(p,days){
     <th style="width:14%">Sales Trend</th><th style="width:8%">Stock</th><th style="width:12%">Status</th><th style="width:14%">Action</th>
   </tr></thead><tbody>${list.map((x,i)=>{
     const imgUrl=x.image||'';
-    const imgTag=imgUrl?`<a href="https://scnd9y-a1.myshopify.com/products/${x.handle}" target="_blank"><img src="${imgUrl}" class="prod-img" alt="" style="margin-right:8px;vertical-align:middle"></a>`:'';
+    const imgTag=imgUrl?`<a href="https://scnd9y-a1.myshopify.com/products/${x.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'"></a>`:'';
     const bdg=x.status==='critical'?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>':x.status==='low'?'<span class="badge b-low"><div class="bdot"></div>Low</span>':'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
     const act=x.status!=='ok'&&x.soldN>20?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
     return`<tr>
