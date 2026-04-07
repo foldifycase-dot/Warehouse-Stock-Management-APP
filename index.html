@@ -255,6 +255,38 @@ td:first-child{padding-left:16px;}
 .period-tab:hover{border-color:var(--ink);color:var(--ink);}
 .period-tab.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
 
+
+/* VARIANT IMAGE */
+.var-img{width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:block;}
+.var-img-ph{width:28px;height:28px;border-radius:4px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+
+/* ETA CALCULATOR */
+.eta-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.eta-hdr{padding:9px 14px;border-bottom:1px solid var(--border);background:#EAE7D8;display:flex;align-items:center;justify-content:space-between;}
+.eta-title{font-family:"Syne",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);}
+.eta-body{padding:14px;}
+.eta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.eta-mode{background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:12px 14px;}
+.eta-mode-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.eta-mode-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.eta-mode-icon.air{background:rgba(45,95,166,.12);}
+.eta-mode-icon.sea{background:rgba(61,122,90,.12);}
+.eta-mode-label{font-family:"Syne",sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;color:var(--ink);}
+.eta-mode-sub{font-size:10px;color:rgba(26,26,24,.4);}
+.eta-input-row{display:flex;align-items:center;gap:6px;}
+.eta-input{width:60px;padding:6px 8px;font-size:13px;font-family:"DM Mono",monospace;font-weight:600;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--ink);text-align:center;outline:none;}
+.eta-input:focus{border-color:var(--ink);}
+.eta-input-unit{font-size:11px;color:rgba(26,26,24,.45);}
+.eta-result{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;}
+.eta-result-label{font-size:10px;color:rgba(26,26,24,.45);flex:1;}
+.eta-result-date{font-family:"DM Mono",monospace;font-size:12px;font-weight:600;color:var(--ink);}
+.eta-result-date.air-col{color:var(--blue);}
+.eta-result-date.sea-col{color:var(--green);}
+.eta-order-date{display:flex;align-items:center;gap:8px;padding:10px 0 0;}
+.eta-order-label{font-size:11px;color:rgba(26,26,24,.45);}
+.eta-order-input{padding:5px 9px;font-size:12px;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--ink);outline:none;font-family:"Inter",sans-serif;}
+.eta-order-input:focus{border-color:var(--ink);}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -452,6 +484,60 @@ td:first-child{padding-left:16px;}
           <div class="page-sub" id="reorderSub">Sorted by urgency — most critical first</div>
         </div>
       </div>
+
+      <!-- ETA CALCULATOR -->
+      <div class="eta-card">
+        <div class="eta-hdr">
+          <div class="eta-title">Estimated Arrival Calculator</div>
+          <div style="font-size:10px;color:rgba(26,26,24,.4)">Order date &nbsp;<input type="date" class="eta-order-input" id="etaOrderDate" oninput="calcETA()"></div>
+        </div>
+        <div class="eta-body">
+          <div class="eta-grid">
+            <div class="eta-mode">
+              <div class="eta-mode-hdr">
+                <div class="eta-mode-icon air">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D5FA6" stroke-width="2" stroke-linecap="round"><path d="M21 16l-9-5-9 5M3 8l9-5 9 5M12 3v18"/></svg>
+                </div>
+                <div>
+                  <div class="eta-mode-label">By Air</div>
+                  <div class="eta-mode-sub">Fast · higher cost</div>
+                </div>
+              </div>
+              <div class="eta-input-row">
+                <input type="number" class="eta-input" id="etaAirDays" value="7" min="1" max="60" oninput="calcETA()">
+                <span class="eta-input-unit">days transit</span>
+              </div>
+              <div class="eta-result">
+                <span class="eta-result-label">Estimated arrival</span>
+                <span class="eta-result-date air-col" id="etaAirResult">—</span>
+              </div>
+            </div>
+            <div class="eta-mode">
+              <div class="eta-mode-hdr">
+                <div class="eta-mode-icon sea">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D7A5A" stroke-width="2" stroke-linecap="round"><path d="M3 17l3-8 6 4 6-4 3 8M2 20h20"/><path d="M12 9V5M9 5h6"/></svg>
+                </div>
+                <div>
+                  <div class="eta-mode-label">By Sea</div>
+                  <div class="eta-mode-sub">Slow · lower cost</div>
+                </div>
+              </div>
+              <div class="eta-input-row">
+                <input type="number" class="eta-input" id="etaSeaDays" value="30" min="1" max="120" oninput="calcETA()">
+                <span class="eta-input-unit">days transit</span>
+              </div>
+              <div class="eta-result">
+                <span class="eta-result-label">Estimated arrival</span>
+                <span class="eta-result-date sea-col" id="etaSeaResult">—</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:rgba(26,26,24,.4);line-height:1.6">
+            Set your order date and transit days above. Estimated arrival dates will update across all products in the reorder queue below.
+          </div>
+        </div>
+      </div>
+
       <div class="card"><div id="reorderTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
     </div>
 
@@ -649,6 +735,7 @@ async function startLoad(){
     document.getElementById('syncInfo').textContent='Live · synced '+t;
     document.getElementById('syncTime').textContent='Last sync: '+t;
     showToast('Shopify synced successfully','ok');
+    initETA();
     renderAll();
   }catch(e){
     dot.className='dot-err';
@@ -699,12 +786,13 @@ function processProducts(raw){
     let wh=parseWH(p.tags);
     if(noTags&&qty>0)wh=['us','uk','au'];
     if(!wh.length)return null;
-    const variantData=v.map(x=>({
+    const variantData=v.map((x,vi)=>({
       title:x.title,
       qty:parseInt(x.inventory_quantity)||0,
       status:status(parseInt(x.inventory_quantity)||0),
       price:parseFloat(x.price||0).toFixed(2),
-      tracked:x.inventory_management==='shopify'
+      tracked:x.inventory_management==='shopify',
+      image:p.images&&p.images[vi]?p.images[vi].src:(p.image?p.image.src:null)
     }));
     return{
       id:p.id,
@@ -776,7 +864,7 @@ function renderAll(){
 
 function whDots(whs){return`<div class="mkt-dots">${whs.map(w=>`<div class="mkt-d" style="background:${WH[w].color}" title="${WH[w].label}"></div>`).join('')}</div>`;}
 
-function tblHTML(prods,showWh){
+function tblHTML(prods,showWh,prefix){
   if(!prods.length)return'<div class="empty-state">No products match this filter.</div>';
   const mx=maxQ(prods);
   return`<div class="tbl-wrap"><table><thead><tr>
@@ -802,12 +890,13 @@ function tblHTML(prods,showWh){
       :`<div class="prod-img-placeholder"><svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><rect x="2" y="2" width="12" height="12" rx="2"/></svg></div>`;
 
     const hasVars=p.variantData&&p.variantData.length>1;
-    const varRows=hasVars?`<tbody class="variant-rows" id="vr-${pi}">${p.variantData.map(v=>{
+    const varRows=hasVars?`<tbody class="variant-rows" id="vr-${prefix}-${pi}">${p.variantData.map(v=>{
       const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
       const vfc=v.status==='critical'?'fill-crit':v.status==='low'?'fill-low':'fill-ok';
       const vpct=Math.round((v.qty/Math.max(mx,1))*100);
+      const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:`<div class="var-img-ph"></div>`;
       return`<tr class="variant-row">
-        <td style="padding-left:58px"><span class="variant-name">${v.title}</span></td>
+        <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
         ${showWh?'<td></td>':''}
         <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div></td>
         <td><span class="variant-qty">${v.qty}</span></td>
@@ -820,8 +909,8 @@ function tblHTML(prods,showWh){
         <div class="prod-img-wrap">
           ${imgTag}
           <div>
-            <div class="pname prod-expand" onclick="toggleVariants(${pi})" title="${hasVars?'Click to see variants':''}">
-              ${p.title}${hasVars?`<span class="prod-expand-arrow" id="arr-${pi}">▶</span>`:''}
+            <div class="pname prod-expand" onclick="toggleVariants('${prefix}',${pi})" title="${hasVars?'Click to see variants':''}">
+              ${p.title}${hasVars?`<span class="prod-expand-arrow" id="arr-${prefix}-${pi}">▶</span>`:''}
             </div>
             <div class="pmeta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div>
           </div>
@@ -836,16 +925,16 @@ function tblHTML(prods,showWh){
   }).join('')}</table></div>`;
 }
 
-function toggleVariants(pi){
-  const rows=document.getElementById('vr-'+pi);
-  const arrow=document.getElementById('arr-'+pi);
+function toggleVariants(prefix,pi){
+  const rows=document.getElementById('vr-'+prefix+'-'+pi);
+  const arrow=document.getElementById('arr-'+prefix+'-'+pi);
   if(!rows)return;
   const open=rows.classList.toggle('open');
   if(arrow)arrow.classList.toggle('open',open);
 }
 
-function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all');}
-function renderFullTable(p){document.getElementById('fullTable').innerHTML=tblHTML(p,activeWarehouse==='all');}
+function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all','ov');}
+function renderFullTable(p){document.getElementById('fullTable').innerHTML=tblHTML(p,activeWarehouse==='all','st');}
 
 function renderPriority(p){
   const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>(a.status==='critical'?0:1)-(b.status==='critical'?0:1)||b.sold90-a.sold90).slice(0,7);
@@ -861,22 +950,78 @@ function renderPriority(p){
     </div>`).join('');
 }
 
+
+
+function initETA(){
+  const today=new Date();
+  const yyyy=today.getFullYear();
+  const mm=String(today.getMonth()+1).padStart(2,'0');
+  const dd=String(today.getDate()).padStart(2,'0');
+  const el=document.getElementById('etaOrderDate');
+  if(el&&!el.value)el.value=`${yyyy}-${mm}-${dd}`;
+  calcETA();
+}
+
+function getETADates(){
+  const orderDateVal=document.getElementById('etaOrderDate')?.value;
+  const airDays=parseInt(document.getElementById('etaAirDays')?.value)||7;
+  const seaDays=parseInt(document.getElementById('etaSeaDays')?.value)||30;
+  const base=orderDateVal?new Date(orderDateVal+'T12:00:00'):new Date();
+  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+  return{
+    airDate:fmt(addDays(base,airDays)),
+    seaDate:fmt(addDays(base,seaDays))
+  };
+}
+
+function calcETA(){
+  const {airDate,seaDate}=getETADates();
+  const airEl=document.getElementById('etaAirResult');
+  const seaEl=document.getElementById('etaSeaResult');
+  if(airEl)airEl.textContent=airDate;
+  if(seaEl)seaEl.textContent=seaDate;
+  renderReorder(filtered());
+}
+
 function renderReorder(p){
   const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>a.qty-b.qty);
   if(!list.length){document.getElementById('reorderTable').innerHTML='<div class="empty-state" style="color:var(--green)">✓ No products need reordering right now</div>';return;}
   const mx=maxQ(p);
+  const {airDate,seaDate}=getETADates();
   document.getElementById('reorderTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:4%">#</th><th style="width:35%">Product</th><th style="width:16%">Stock</th>
-    <th style="width:7%">Units</th><th style="width:10%">Sold 90d</th><th style="width:14%">Suggest Order</th><th style="width:14%">Status</th>
-  </tr></thead><tbody>${list.map((x,i)=>`<tr>
+    <th style="width:4%">#</th>
+    <th style="width:30%">Product</th>
+    <th style="width:13%">Stock</th>
+    <th style="width:6%">Units</th>
+    <th style="width:9%">Sold 90d</th>
+    <th style="width:10%">Suggest</th>
+    <th style="width:10%">Status</th>
+    <th style="width:9%"><span style="color:#2D5FA6">✈ Air ETA</span></th>
+    <th style="width:9%"><span style="color:#3D7A5A">⛵ Sea ETA</span></th>
+  </tr></thead><tbody>${list.map((x,i)=>{
+    const imgUrl=x.image||'';
+    const imgTag=imgUrl?`<img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'" style="flex-shrink:0">`:`<div class="prod-img-placeholder" style="flex-shrink:0"></div>`;
+    return`<tr>
     <td style="color:rgba(26,26,24,.3);font-size:11px;font-family:'DM Mono',monospace">${i+1}</td>
-    <td><div class="pname">${x.title}</div>${activeWarehouse==='all'?`<div class="pmeta">${whDots(x.warehouses)}</div>`:''}</td>
+    <td>
+      <div class="prod-img-wrap">
+        ${imgTag}
+        <div>
+          <div class="pname">${x.title}</div>
+          ${activeWarehouse==='all'?`<div class="pmeta">${whDots(x.warehouses)}</div>`:''}
+        </div>
+      </div>
+    </td>
     <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${x.status==='critical'?'fill-crit':'fill-low'}" style="width:${Math.round((x.qty/mx)*100)}%"></div></div></div></td>
     <td><span class="qty-num">${x.qty}</span></td>
     <td><span class="sales-chip">${x.sold90}</span></td>
     <td style="font-size:11px;color:rgba(26,26,24,.5);font-family:'DM Mono',monospace">${Math.max(50-x.qty,10)} units</td>
     <td><span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span></td>
-  </tr>`).join('')}</tbody></table></div>`;
+    <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#2D5FA6">${airDate}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#3D7A5A">${seaDate}</td>
+  </tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 
 function renderPopular(p){
