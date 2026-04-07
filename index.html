@@ -1616,6 +1616,8 @@ async function confirmRestock(){
 
   renderPOLog();
   closeRestock();
+  cartItems=[];
+  renderCart();
   showToast(`Order ${orderId} placed — ${currentOrderLines.length} item${currentOrderLines.length!==1?'s':''}${supplierEmail?' · Supplier notified':''}`,'ok');
 }
 
@@ -1977,44 +1979,19 @@ function quickRestock(productId,variantId,productTitle,image,variantTitle){
 }
 
 function openRestockForProduct(prod){
-  // Open the restock modal and auto-select this product
-  openRestock();
-  // Simulate selecting the product
-  restockState.product=prod;
-  restockState.variant=null;
-  document.getElementById('productSearch').style.display='none';
-  document.getElementById('productDropdown').classList.remove('open');
-  const imgTag=prod.image
-    ?`<img src="${prod.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`
-    :'<div class="selected-product-ph"></div>';
-  document.getElementById('selectedProductWrap').innerHTML=`
-    <div class="selected-product">
-      ${imgTag}
-      <div class="selected-name">${prod.title}</div>
-      <span class="selected-clear" onclick="clearProduct()">✕ Change</span>
-    </div>`;
-  document.getElementById('selectedProductWrap').style.display='block';
-  renderVariantGrid(prod);
-  // Switch to reorder view and open modal
-  document.querySelectorAll('.nav-btn').forEach(b=>{
-    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'reorder'")){setView('reorder',b);}
-  });
+  // Stay on current page — open cart panel with picker
+  cartPickerState={prod,variant:null};
+  cartOpen=true;
+  document.getElementById('cartPanel').classList.add('open');
+  _renderPicker();
 }
-
 function openRestockForVariant(prod,v){
-  openRestockForProduct(prod);
-  // Also auto-select the specific variant
-  setTimeout(()=>{
-    restockState.variant=v;
-    document.querySelectorAll('.var-select-row').forEach((r,i)=>{
-      const vd=prod.variantData[i];
-      if(vd&&String(vd.id)===String(v.id))r.classList.add('selected');
-    });
-    document.getElementById('qtySection').style.display='block';
-    document.getElementById('addLineBtnRow').style.display='block';
-  },50);
+  // Skip to qty step — go straight to cart picker qty
+  cartPickerState={prod,variant:String(v.id)};
+  cartOpen=true;
+  document.getElementById('cartPanel').classList.add('open');
+  _renderPicker();
 }
-
 function addToCart(productId, variantId, productName, variantName, image){
   // Check if already in cart
   const key=productId+'-'+variantId;
@@ -2155,19 +2132,17 @@ function renderCart(){
 
 function checkoutCart(){
   if(!cartItems.length)return;
-  // Save lines BEFORE openRestock() clears them
+  // Save lines before openRestock clears them
   const savedLines=cartItems.map(i=>({
     productId:i.productId,product:i.product,
     variant:i.variant,image:i.image,qty:i.qty
   }));
-  // Clear cart
-  cartItems=[];
-  renderCart();
+  // Close cart
   cartOpen=false;
   document.getElementById('cartPanel').classList.remove('open');
-  // Open modal (this resets currentOrderLines=[])
+  // Open modal — this resets currentOrderLines
   openRestock();
-  // Now restore our saved lines
+  // Restore saved lines after openRestock reset
   currentOrderLines=savedLines;
   renderOrderLines();
   if(currentOrderLines.length>0){
@@ -2177,12 +2152,7 @@ function checkoutCart(){
     document.getElementById('addLinePanel').style.display='none';
   }
   updateConfirmBtn();
-  // Switch nav to reorder view
-  document.querySelectorAll('.nav-btn').forEach(b=>{
-    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'reorder'")){
-      setView('reorder',b);
-    }
-  });
+  // Don't clear cartItems until order is actually placed
 }
 
 
