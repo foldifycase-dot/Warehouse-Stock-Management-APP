@@ -1233,32 +1233,45 @@ async function sendToSupplier(order){
   </body></html>`;
 
   try{
+    const fromEmail=document.getElementById('fromEmail')?.value||'alerts@foldifycase.com';
     const r=await fetch(`${PROXY}?service=alert`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         to:[order.supplierEmail],
         from_name:'FoldifyCase Warehouse',
-        from_email:document.getElementById('fromEmail')?.value||'alerts@foldifycase.com',
+        from_email:fromEmail,
         subject:`Purchase Order ${order.id} — FoldifyCase`,
-        html:emailBody,
-        type:'supplier',warehouse:'',products:[]
+        custom_html:emailBody,
+        type:'supplier',
+        warehouse:'',
+        products:[]
       })
     });
-    if(r.ok){order.sent=true;}
-  }catch(e){console.warn('Supplier email failed:',e);}
+    const result=await r.json().catch(()=>({}));
+    if(r.ok&&!result.error){
+      order.sent=true;
+    } else {
+      console.warn('Supplier email failed:',result);
+      showToast('Email failed: '+(result.error||result.message||'Check Vercel logs'),'err');
+    }
+  }catch(e){
+    console.warn('Supplier email error:',e);
+    showToast('Email error: '+e.message,'err');
+  }
 }
 
 async function resendToSupplier(orderId){
   const order=poOrders.find(o=>o.id===orderId);
   if(!order)return;
   const email=prompt('Supplier email address:',order.supplierEmail||'');
-  if(!email)return;
+  if(!email||!email.includes('@'))return;
   order.supplierEmail=email;
   order.sent=false;
+  showToast('Sending to supplier…','ok');
   await sendToSupplier(order);
   renderPOLog();
-  showToast('Order sent to supplier','ok');
+  if(order.sent)showToast('Purchase order sent to '+email,'ok');
 }
 
 function renderPOLog(){
@@ -1545,6 +1558,18 @@ function initETA(){
   const el=document.getElementById('etaOrderDate');
   if(el&&!el.value)el.value=`${yyyy}-${mm}-${dd}`;
   calcETA();
+  // Restore saved settings from localStorage
+  try{
+    const saved=localStorage.getItem('fc_recipients');
+    if(saved){
+      const arr=JSON.parse(saved);
+      arr.forEach(e=>addEmail(e));
+    }
+    const fn=localStorage.getItem('fc_fromName');
+    const fe=localStorage.getItem('fc_fromEmail');
+    if(fn)document.getElementById('fromName').value=fn;
+    if(fe)document.getElementById('fromEmail').value=fe;
+  }catch(e){}
 }
 
 function getETADates(){
@@ -1676,7 +1701,7 @@ function saveThresh(){
 }
 
 function handleEmailKey(e){
-  if(e.key==='Enter'||e.key===','){e.preventDefault();addEmail(e.target.value.trim());}
+  if(e.key==='Enter'||e.key===','||e.key==='	'){e.preventDefault();addEmail(e.target.value.trim());e.target.value='';}
   if(e.key==='Backspace'&&e.target.value===''&&emailRecipients.length)removeEmail(emailRecipients.length-1);
 }
 function addEmail(email){if(!email||!email.includes('@'))return;if(emailRecipients.includes(email))return;emailRecipients.push(email);renderTags();}
@@ -1687,11 +1712,34 @@ function renderTags(){
   emailRecipients.forEach((e,i)=>{const t=document.createElement('div');t.className='email-tag';t.innerHTML=`<span>${e}</span><span class="email-tag-remove" onclick="removeEmail(${i})">×</span>`;wrap.appendChild(t);});
   wrap.appendChild(input);input.focus();
 }
-function saveRecipients(){const m=document.getElementById('recipSaved');m.style.display='block';setTimeout(()=>m.style.display='none',2500);showToast('Recipients saved','ok');}
+function saveRecipients(){
+  // Also add whatever is currently typed in the input
+  const input=document.getElementById('emailTagInput');
+  if(input&&input.value.trim()){
+    addEmail(input.value.trim());
+    input.value='';
+  }
+  if(!emailRecipients.length){showSendStatus('Type an email address and press Enter or Save.','err');return;}
+  // Persist to localStorage so they survive page reload
+  try{localStorage.setItem('fc_recipients',JSON.stringify(emailRecipients));}catch(e){}
+  try{localStorage.setItem('fc_fromName',document.getElementById('fromName').value);}catch(e){}
+  try{localStorage.setItem('fc_fromEmail',document.getElementById('fromEmail').value);}catch(e){}
+  const m=document.getElementById('recipSaved');
+  m.style.display='block';
+  m.textContent='✓ '+emailRecipients.length+' recipient'+(emailRecipients.length!==1?'s':'')+' saved';
+  setTimeout(()=>m.style.display='none',3000);
+  showToast('Recipients saved — ready to send','ok');
+}
 function saveTriggers(){const m=document.getElementById('triggerSaved');m.style.display='block';setTimeout(()=>m.style.display='none',2500);showToast('Triggers saved','ok');}
 
 async function sendAlert(){
-  if(!emailRecipients.length){showSendStatus('Add at least one recipient email first.','err');return;}
+  // Also pick up any email still in the input that wasn't Enter-confirmed
+  const pendingInput=document.getElementById('emailTagInput');
+  if(pendingInput&&pendingInput.value.trim()){
+    addEmail(pendingInput.value.trim());
+    pendingInput.value='';
+  }
+  if(!emailRecipients.length){showSendStatus('Enter an email address in the Recipients field above and press Enter or Save Recipients first.','err');return;}
   const type=document.getElementById('alertType').value;
   const wh=document.getElementById('alertWh').value;
   const btn=document.getElementById('sendAlertBtn');
