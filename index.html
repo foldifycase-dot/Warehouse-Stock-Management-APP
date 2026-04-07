@@ -79,7 +79,8 @@ body{background:var(--cream);color:var(--ink);font-family:"Inter",sans-serif;fon
 /* PAGE HEADER */
 .page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;}
 .page-title{font-family:"DM Mono",monospace;font-weight:500;font-size:20px;letter-spacing:.1em;text-transform:uppercase;}
-.page-title em{font-style:normal;color:var(--gold);}
+.page-title em{font-style:normal;color:var(--ink);}
+.page-title em#whTitle{color:var(--gold);}
 .page-sub{font-size:12px;color:rgba(26,26,24,.45);margin-top:4px;line-height:1.5;}
 
 /* ALERT BANNER */
@@ -403,6 +404,17 @@ td:first-child{padding-left:16px;}
 .po-line-variant{font-size:10px;color:rgba(26,26,24,.4);}
 .po-line-qty{font-family:"DM Mono",monospace;font-weight:700;font-size:12px;color:var(--ink);background:#EAE7D8;padding:2px 7px;border-radius:4px;flex-shrink:0;}
 
+
+/* STOCK FILTER BAR */
+.stock-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.filter-select{padding:8px 12px;font-size:12px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;color:var(--ink);outline:none;font-family:"Inter",sans-serif;cursor:pointer;transition:border-color .15s;}
+.filter-select:focus{border-color:var(--ink);}
+.filter-select option{color:var(--ink);}
+.filter-divider{width:1px;height:24px;background:var(--border);flex-shrink:0;}
+.filter-clear{font-size:11px;color:rgba(26,26,24,.4);cursor:pointer;padding:4px 8px;border-radius:5px;transition:all .15s;background:transparent;border:none;font-family:"Inter",sans-serif;}
+.filter-clear:hover{color:var(--red);background:rgba(201,64,64,.06);}
+.filter-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(200,169,110,.12);color:var(--gold-d);border:1px solid rgba(200,169,110,.25);}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -585,10 +597,35 @@ td:first-child{padding-left:16px;}
           <div class="page-sub" id="stockSub">—</div>
         </div>
       </div>
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input type="text" class="search-input" placeholder="Search products…" oninput="doSearch(this.value)">
+      <div class="stock-filter-bar">
+        <div class="search-wrap" style="flex:1;min-width:200px;margin-bottom:0">
+          <span class="search-icon">⌕</span>
+          <input type="text" class="search-input" id="stockSearchInput" placeholder="Search products…" oninput="applyStockFilters()">
+        </div>
+        <select class="filter-select" id="sfStatus" onchange="applyStockFilters()">
+          <option value="">All status</option>
+          <option value="critical">🔴 Critical</option>
+          <option value="low">🟡 Low stock</option>
+          <option value="ok">🟢 OK</option>
+        </select>
+        <select class="filter-select" id="sfWarehouse" onchange="applyStockFilters()">
+          <option value="">All warehouses</option>
+          <option value="us">🇺🇸 US</option>
+          <option value="uk">🇬🇧 UK</option>
+          <option value="au">🇦🇺 AU</option>
+        </select>
+        <select class="filter-select" id="sfSort" onchange="applyStockFilters()">
+          <option value="default">Sort: Default</option>
+          <option value="qty_asc">Stock: Low → High</option>
+          <option value="qty_desc">Stock: High → Low</option>
+          <option value="sold_desc">Best selling first</option>
+          <option value="name_asc">Name: A → Z</option>
+          <option value="name_desc">Name: Z → A</option>
+        </select>
+        <div class="filter-divider"></div>
+        <button class="filter-clear" onclick="clearStockFilters()" title="Clear all filters">✕ Clear</button>
       </div>
+      <div id="stockFilterTags" style="display:none;margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap"></div>
       <div class="card"><div id="fullTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
     </div>
 
@@ -599,62 +636,34 @@ td:first-child{padding-left:16px;}
           <div class="page-title">REORDER <em>QUEUE</em></div>
           <div class="page-sub" id="reorderSub">Sorted by urgency — most critical first</div>
         </div>
-        <button class="btn-sol gold" onclick="openRestock()" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <button class="btn-sol gold" onclick="openRestock()" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;min-width:180px">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
           Create Restock Order
         </button>
       </div>
 
-      <!-- ETA CALCULATOR -->
-      <div class="eta-card">
-        <div class="eta-hdr">
-          <div class="eta-title">Estimated Arrival Calculator</div>
-          <div style="font-size:10px;color:rgba(26,26,24,.4)">Order date &nbsp;<input type="date" class="eta-order-input" id="etaOrderDate" oninput="calcETA()"></div>
+      <!-- ETA CALCULATOR — compact single row -->
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);flex-shrink:0">ETA Calculator</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:10px;color:rgba(26,26,24,.4)">Order date</span>
+          <input type="date" class="eta-order-input" id="etaOrderDate" oninput="calcETA()" style="padding:4px 8px;font-size:11px;border:1.5px solid var(--border2);border-radius:5px;background:#fff;color:var(--ink);outline:none;font-family:'Inter',sans-serif">
         </div>
-        <div class="eta-body">
-          <div class="eta-grid">
-            <div class="eta-mode">
-              <div class="eta-mode-hdr">
-                <div class="eta-mode-icon air">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D5FA6" stroke-width="2" stroke-linecap="round"><path d="M21 16l-9-5-9 5M3 8l9-5 9 5M12 3v18"/></svg>
-                </div>
-                <div>
-                  <div class="eta-mode-label">By Air</div>
-                  <div class="eta-mode-sub">Fast · higher cost</div>
-                </div>
-              </div>
-              <div class="eta-input-row">
-                <input type="number" class="eta-input" id="etaAirDays" value="7" min="1" max="60" oninput="calcETA()">
-                <span class="eta-input-unit">days transit</span>
-              </div>
-              <div class="eta-result">
-                <span class="eta-result-label">Estimated arrival</span>
-                <span class="eta-result-date air-col" id="etaAirResult">—</span>
-              </div>
-            </div>
-            <div class="eta-mode">
-              <div class="eta-mode-hdr">
-                <div class="eta-mode-icon sea">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D7A5A" stroke-width="2" stroke-linecap="round"><path d="M3 17l3-8 6 4 6-4 3 8M2 20h20"/><path d="M12 9V5M9 5h6"/></svg>
-                </div>
-                <div>
-                  <div class="eta-mode-label">By Sea</div>
-                  <div class="eta-mode-sub">Slow · lower cost</div>
-                </div>
-              </div>
-              <div class="eta-input-row">
-                <input type="number" class="eta-input" id="etaSeaDays" value="30" min="1" max="120" oninput="calcETA()">
-                <span class="eta-input-unit">days transit</span>
-              </div>
-              <div class="eta-result">
-                <span class="eta-result-label">Estimated arrival</span>
-                <span class="eta-result-date sea-col" id="etaSeaResult">—</span>
-              </div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:rgba(26,26,24,.4);line-height:1.6">
-            Set your order date and transit days above. Estimated arrival dates will update across all products in the reorder queue below.
-          </div>
+        <div style="width:1px;height:24px;background:var(--border);flex-shrink:0"></div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2D5FA6" stroke-width="2" stroke-linecap="round"><path d="M21 16l-9-5-9 5M3 8l9-5 9 5M12 3v18"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#2D5FA6">Air</span>
+          <input type="number" class="eta-input" id="etaAirDays" value="7" min="1" max="60" oninput="calcETA()" style="width:46px;padding:4px 6px;font-size:12px;font-family:'DM Mono',monospace;font-weight:600;border:1.5px solid var(--border2);border-radius:5px;background:#fff;color:var(--ink);text-align:center;outline:none">
+          <span style="font-size:10px;color:rgba(26,26,24,.4)">days</span>
+          <span style="font-size:11px;font-weight:600;color:#2D5FA6;font-family:'DM Mono',monospace" id="etaAirResult">—</span>
+        </div>
+        <div style="width:1px;height:24px;background:var(--border);flex-shrink:0"></div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3D7A5A" stroke-width="2" stroke-linecap="round"><path d="M3 17l3-8 6 4 6-4 3 8M2 20h20"/><path d="M12 9V5M9 5h6"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#3D7A5A">Sea</span>
+          <input type="number" class="eta-input" id="etaSeaDays" value="30" min="1" max="120" oninput="calcETA()" style="width:46px;padding:4px 6px;font-size:12px;font-family:'DM Mono',monospace;font-weight:600;border:1.5px solid var(--border2);border-radius:5px;background:#fff;color:var(--ink);text-align:center;outline:none">
+          <span style="font-size:10px;color:rgba(26,26,24,.4)">days</span>
+          <span style="font-size:11px;font-weight:600;color:#3D7A5A;font-family:'DM Mono',monospace" id="etaSeaResult">—</span>
         </div>
       </div>
 
@@ -1628,7 +1637,7 @@ function toggleVariants(prefix,pi){
 }
 
 function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all','ov');}
-function renderFullTable(p){document.getElementById('fullTable').innerHTML=tblHTML(p,activeWarehouse==='all','st');}
+function renderFullTable(p){applyStockFilters();}
 
 function renderPriority(p){
   const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>(a.status==='critical'?0:1)-(b.status==='critical'?0:1)||b.sold90-a.sold90).slice(0,7);
@@ -1740,23 +1749,56 @@ function renderPopularWithData(p,days){
   const list=[...p].sort((a,b)=>b.soldN-a.soldN);
   const mx=Math.max(...list.map(x=>x.soldN),1);
   document.getElementById('popularTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:5%">Rank</th><th style="width:36%">Product</th><th style="width:11%">Sold ${days}d</th>
-    <th style="width:14%">Sales Trend</th><th style="width:8%">Stock</th><th style="width:12%">Status</th><th style="width:14%">Action</th>
+    <th style="width:5%">Rank</th>
+    <th style="width:34%">Product</th>
+    <th style="width:10%">Sold ${days}d</th>
+    <th style="width:13%">Sales Trend</th>
+    <th style="width:7%">Stock</th>
+    <th style="width:11%">Status</th>
+    <th style="width:12%">Action</th>
+    <th style="width:8%">Demand</th>
   </tr></thead><tbody>${list.map((x,i)=>{
     const imgUrl=x.image||'';
     const imgTag=imgUrl?`<a href="https://scnd9y-a1.myshopify.com/products/${x.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'"></a>`:'';
     const bdg=x.status==='critical'?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>':x.status==='low'?'<span class="badge b-low"><div class="bdot"></div>Low</span>':'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
     const act=x.status!=='ok'&&x.soldN>20?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
-    return`<tr>
+    const sn=Math.min(5,Math.ceil((x.soldN||0)/40));
+    const stars=Array.from({length:5},(_,si)=>`<svg width="9" height="9" viewBox="0 0 10 10" fill="${si<sn?'#C8A96E':'#DDD'}"><polygon points="5,1 6.5,4 9,4 7,6 8,9 5,7 2,9 3,6 1,4 3.5,4"/></svg>`).join('');
+    const hasVars=x.variantData&&x.variantData.length>1;
+    // Variant rows for popular table
+    const varRows=hasVars?`<tbody class="variant-rows" id="vr-pop-${i}">${x.variantData.map(v=>{
+      const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
+      const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:'<div class="var-img-ph"></div>';
+      return`<tr class="variant-row">
+        <td></td>
+        <td style="padding-left:58px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
+        <td></td><td></td>
+        <td><span class="variant-qty">${v.qty}</span></td>
+        <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
+        <td></td><td></td>
+      </tr>`;
+    }).join('')}</tbody>`:'';
+    return`<tbody><tr>
       <td style="font-family:'DM Mono',monospace;font-weight:500;font-size:12px;color:rgba(26,26,24,.4)">#${i+1}</td>
-      <td><div class="prod-img-wrap">${imgTag}<div><div class="pname">${x.title}</div><div class="pmeta">$${x.price}</div></div></div></td>
+      <td>
+        <div class="prod-img-wrap">
+          ${imgTag}
+          <div>
+            <div class="pname prod-expand" onclick="toggleVariants('pop',${i})" style="cursor:${hasVars?'pointer':'default'}">
+              ${x.title}${hasVars?`<span class="prod-expand-arrow" id="arr-pop-${i}">▶</span>`:''}
+            </div>
+            <div class="pmeta">$${x.price} · ${x.variants} variant${x.variants!==1?'s':''}</div>
+          </div>
+        </div>
+      </td>
       <td><span class="sales-chip">${x.soldN}</span></td>
       <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill fill-sales" style="width:${Math.round((x.soldN/mx)*100)}%"></div></div></div></td>
       <td><span class="qty-num">${x.qty}</span></td>
       <td>${bdg}</td>
       <td>${act}</td>
-    </tr>`;
-  }).join('')}</tbody></table></div>`;
+      <td><div class="stars">${stars}</div></td>
+    </tr></tbody>${varRows}`;
+  }).join('')}</table></div>`;
 }
 
 function setWarehouse(w){
@@ -1785,7 +1827,47 @@ function setChip(f,el){
   renderMainTable(filtered());
 }
 
-function doSearch(q){document.getElementById('fullTable').innerHTML=tblHTML(filtered().filter(p=>p.title.toLowerCase().includes(q.toLowerCase())),activeWarehouse==='all');}
+function doSearch(q){applyStockFilters();}
+
+function applyStockFilters(){
+  const q=(document.getElementById('stockSearchInput')?.value||'').toLowerCase().trim();
+  const status=document.getElementById('sfStatus')?.value||'';
+  const wh=document.getElementById('sfWarehouse')?.value||'';
+  const sort=document.getElementById('sfSort')?.value||'default';
+
+  let prods=allProducts.slice();
+
+  // Warehouse filter (independent of sidebar warehouse tab)
+  if(wh) prods=prods.filter(p=>p.warehouses.includes(wh));
+  else prods=filtered(); // respect sidebar tab
+
+  // Search
+  if(q) prods=prods.filter(p=>p.title.toLowerCase().includes(q));
+
+  // Status filter
+  if(status) prods=prods.filter(p=>p.status===status);
+
+  // Sort
+  if(sort==='qty_asc') prods=[...prods].sort((a,b)=>a.qty-b.qty);
+  else if(sort==='qty_desc') prods=[...prods].sort((a,b)=>b.qty-a.qty);
+  else if(sort==='sold_desc') prods=[...prods].sort((a,b)=>b.sold90-a.sold90);
+  else if(sort==='name_asc') prods=[...prods].sort((a,b)=>a.title.localeCompare(b.title));
+  else if(sort==='name_desc') prods=[...prods].sort((a,b)=>b.title.localeCompare(a.title));
+
+  document.getElementById('fullTable').innerHTML=tblHTML(prods,activeWarehouse==='all','st');
+}
+
+function clearStockFilters(){
+  const si=document.getElementById('stockSearchInput');
+  const ss=document.getElementById('sfStatus');
+  const sw=document.getElementById('sfWarehouse');
+  const so=document.getElementById('sfSort');
+  if(si)si.value='';
+  if(ss)ss.value='';
+  if(sw)sw.value='';
+  if(so)so.value='default';
+  applyStockFilters();
+}
 
 function saveThresh(){
   critT=parseInt(document.getElementById('critT').value)||5;
