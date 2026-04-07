@@ -2509,7 +2509,7 @@ function tblHTML(prods,showWh,prefix){
         <td><span class="variant-qty">${v.qty}</span></td>
         <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
         <td></td>
-        <td><button class="btn-restock" data-pid="${p.id}" data-vid="${v.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-vtitle="${v.title.replace(/"/g,'&quot;')}" data-img="${(v.image||p.image||'').replace(/"/g,'&quot;')}" onclick="quickRestockBtn(this)">
+        <td><button class="btn-restock" data-pid="${p.id}" data-vid="${v.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-vtitle="${v.title.replace(/"/g,'&quot;')}" data-img="${(v.image||p.image||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
           <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
           + Restock
         </button></td>
@@ -2531,9 +2531,9 @@ function tblHTML(prods,showWh,prefix){
       <td><span class="qty-num">${p.qty}</span></td>
       <td>${bdg}</td>
       <td><div class="stars">${stars}</div></td>
-      <td><button class="btn-restock" onclick="quickRestock('${p.id.toString().replace(/'/g,"\\'")}','','${p.title.replace(/'/g,"\\'")}',${JSON.stringify(p.image||'')})">
+      <td><button class="btn-restock" data-pid="${p.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-img="${(p.image||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
         <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
-        Restock
+        + Restock
       </button></td>
     </tr></tbody>${varRows}`;
   }).join('')}</table></div>`;
