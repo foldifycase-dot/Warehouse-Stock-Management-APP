@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoldifyCase — Warehouse Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F5F3E9;--ink:#1A1A18;--gold:#C8A96E;--gold-d:#A6873A;
+  --green:#3D7A5A;--red:#C94040;--blue:#2D5FA6;
+  --border:rgba(26,26,24,0.12);--border2:rgba(26,26,24,0.2);
+  --c-us:#3B4F8C;--c-uk:#8B1A2A;--c-au:#1A6B4A;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);color:var(--ink);font-family:"Inter",sans-serif;font-size:13px;min-height:100vh;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;background:var(--ink);border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:34px;height:34px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{display:flex;flex-direction:column;}
+.logo-name{font-family:"Syne",sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:.06em;}
+.logo-sub{font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;}
+.pills{display:flex;gap:8px;}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:30px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,.75);}
+.dot-g{width:7px;height:7px;border-radius:50%;background:#34d058;animation:pulse 2s infinite;flex-shrink:0;}
+.dot-gold{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.dot-warn{width:7px;height:7px;border-radius:50%;background:#EF9F27;flex-shrink:0;}
+.dot-err{width:7px;height:7px;border-radius:50%;background:#C94040;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* WAREHOUSE TABS — like country tabs in fulfilment */
+.wh-bar{display:flex;gap:8px;padding:14px 24px;background:var(--cream);flex-wrap:wrap;margin-bottom:18px;}
+.whtab{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1.5px solid var(--border2);border-radius:30px;background:#fff;font-family:"Inter",sans-serif;font-size:12px;font-weight:500;color:rgba(26,26,24,.6);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.whtab:hover{border-color:var(--ink);color:var(--ink);}
+.whtab.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+.whtab.active-us{background:var(--c-us);color:#fff;border-color:var(--c-us);}
+.whtab.active-uk{background:var(--c-uk);color:#fff;border-color:var(--c-uk);}
+.whtab.active-au{background:var(--c-au);color:#fff;border-color:var(--c-au);}
+.wh-bar-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.whtab-count{font-size:10px;background:rgba(26,26,24,.08);color:rgba(26,26,24,.5);padding:1px 7px;border-radius:10px;}
+.whtab.active .whtab-count,.whtab.active-us .whtab-count,.whtab.active-uk .whtab-count,.whtab.active-au .whtab-count{background:rgba(255,255,255,.25);color:#fff;}
+.whtab.active .wh-bar-dot{background:rgba(255,255,255,.6);}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:240px 1fr;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{background:#3D3D38;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-section{padding:16px 18px 0;}
+.sb-lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-family:"Syne",sans-serif;}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.55);font-family:"Inter",sans-serif;font-size:12px;cursor:pointer;transition:all .18s;width:100%;text-align:left;margin-bottom:2px;}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-btn.active{background:rgba(200,169,110,.14);border-color:rgba(200,169,110,.28);color:var(--gold);}
+.nav-btn svg{opacity:.6;flex-shrink:0;}
+.nav-btn.active svg{opacity:1;}
+.nav-alert-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#C94040;display:none;flex-shrink:0;}
+.sb-divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:12px 18px;}
+
+/* STATS in sidebar */
+.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 18px 14px;}
+.sb-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 8px;text-align:center;}
+.sb-stat-n{font-family:"Inter",sans-serif;font-weight:700;font-size:19px;color:var(--gold);line-height:1;}
+.sb-stat-n.red{color:#e07070;}
+.sb-stat-n.green{color:#6fd6a0;}
+.sb-stat-l{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;}
+
+/* SYNC button in sidebar */
+.sync-box{padding:0 18px 16px;}
+.btn-sync{width:100%;padding:9px;background:var(--gold);color:var(--ink);border:none;border-radius:7px;font-family:"Syne",sans-serif;font-weight:700;font-size:11px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;}
+.btn-sync:hover{background:var(--gold-d);color:#fff;}
+.sync-time{font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:5px;}
+
+/* MAIN CONTENT */
+.main{padding:26px;overflow-y:auto;background:var(--cream);}
+.view{display:none;}.view.active{display:block;}
+
+/* PAGE HEADER */
+.page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;}
+.page-title{font-family:"DM Mono",monospace;font-weight:500;font-size:20px;letter-spacing:.1em;text-transform:uppercase;}
+.page-title em{font-style:normal;color:var(--gold);}
+.page-sub{font-size:12px;color:rgba(26,26,24,.45);margin-top:4px;line-height:1.5;}
+
+/* ALERT BANNER */
+.alert-banner{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:16px;font-size:12px;background:rgba(201,64,64,.08);border:1px solid rgba(201,64,64,.2);color:#8B2020;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;}
+.stat-card-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.4);font-weight:600;margin-bottom:6px;}
+.stat-card-value{font-family:"Syne",sans-serif;font-weight:700;font-size:26px;color:var(--ink);line-height:1;}
+.stat-card-value.warn{color:#B87D2A;}
+.stat-card-value.danger{color:var(--red);}
+.stat-card-sub{font-size:10px;color:rgba(26,26,24,.35);margin-top:4px;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 240px;gap:14px;margin-bottom:20px;}
+
+/* CARD */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.card-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#EAE7D8;}
+.card-title{font-family:"Syne",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);}
+.card-sub{font-size:10px;color:rgba(26,26,24,.45);margin-top:2px;font-weight:400;text-transform:none;letter-spacing:0;}
+
+/* FILTER CHIPS */
+.chips{display:flex;gap:4px;}
+.chip{font-size:11px;padding:4px 11px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;color:rgba(26,26,24,.55);font-family:"Inter",sans-serif;font-weight:500;transition:all .15s;}
+.chip:hover{border-color:var(--ink);color:var(--ink);}
+.chip.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);background:#EAE7D8;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;}
+thead th:first-child{padding-left:18px;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#fafaf5;}
+td{padding:11px 14px;vertical-align:middle;}
+td:first-child{padding-left:18px;}
+.pname{font-weight:600;font-size:12px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+.pmeta{font-size:10px;color:rgba(26,26,24,.4);margin-top:2px;}
+.bar-wrap{display:flex;align-items:center;gap:8px;}
+.bar-bg{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:50px;}
+.bar-fill{height:100%;border-radius:2px;transition:width .3s;}
+.fill-ok{background:var(--green);}
+.fill-low{background:#C8A96E;}
+.fill-crit{background:var(--red);}
+.fill-sales{background:var(--blue);}
+.qty-num{font-family:"Inter",sans-serif;font-weight:700;font-size:13px;min-width:24px;text-align:right;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;}
+.bdot{width:5px;height:5px;border-radius:50%;}
+.b-crit{background:rgba(201,64,64,.1);color:var(--red);}
+.b-crit .bdot{background:var(--red);}
+.b-low{background:rgba(200,169,110,.13);color:var(--gold-d);}
+.b-low .bdot{background:var(--gold-d);}
+.b-ok{background:rgba(61,122,90,.1);color:var(--green);}
+.b-ok .bdot{background:var(--green);}
+.b-info{background:rgba(45,95,166,.1);color:var(--blue);}
+.b-info .bdot{background:var(--blue);}
+.mkt-dots{display:flex;gap:3px;align-items:center;}
+.mkt-d{width:8px;height:8px;border-radius:50%;}
+.stars{display:flex;gap:2px;}
+.sales-chip{display:inline-block;font-family:"DM Mono",monospace;font-size:11px;padding:2px 8px;border-radius:4px;background:#EAE7D8;color:rgba(26,26,24,.7);font-weight:500;}
+
+/* PRIORITY PANEL */
+.pri-list{display:flex;flex-direction:column;}
+.pri-row{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.pri-row:last-child{border-bottom:none;}
+.pri-row:hover{background:#fafaf5;}
+.pri-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;background:#EAE7D8;color:rgba(26,26,24,.5);font-family:"Syne",sans-serif;}
+.pri-num.p1{background:rgba(200,169,110,.2);color:var(--gold-d);}
+.pri-num.p2{background:rgba(26,26,24,.08);color:rgba(26,26,24,.5);}
+.pri-num.p3{background:rgba(200,169,110,.12);color:var(--gold-d);}
+.pri-info{flex:1;min-width:0;}
+.pri-name{font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pri-det{font-size:10px;color:rgba(26,26,24,.4);margin-top:1px;}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.3;font-size:14px;pointer-events:none;}
+.search-input{width:100%;padding:10px 13px 10px 36px;background:#fff;border:1.5px solid var(--border);border-radius:7px;font-family:"Inter",sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--ink);}
+.search-input::placeholder{color:rgba(26,26,24,.3);}
+
+/* EMAIL ALERTS */
+.alert-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.alert-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:20px;}
+.alert-card-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:3px;letter-spacing:.02em;}
+.alert-card-sub{font-size:11px;color:rgba(26,26,24,.45);margin-bottom:16px;line-height:1.55;}
+.field-lbl{font-size:11px;font-weight:600;color:rgba(26,26,24,.7);margin-bottom:5px;letter-spacing:.02em;}
+.field-hint{font-size:10px;color:rgba(26,26,24,.4);margin-bottom:5px;}
+.field-input{width:100%;padding:8px 11px;font-size:12px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;color:var(--ink);margin-bottom:12px;outline:none;font-family:"Inter",sans-serif;transition:border-color .15s;}
+.field-input:focus{border-color:var(--ink);}
+.field-input::placeholder{color:rgba(26,26,24,.3);}
+.email-tag-wrap{display:flex;flex-wrap:wrap;gap:5px;padding:7px 9px;border:1.5px solid var(--border2);border-radius:7px;min-height:40px;cursor:text;margin-bottom:12px;background:#fff;transition:border-color .15s;}
+.email-tag-wrap:focus-within{border-color:var(--ink);}
+.email-tag{display:flex;align-items:center;gap:4px;background:#EAE7D8;border-radius:4px;padding:2px 8px;font-size:11px;color:var(--ink);font-weight:500;}
+.email-tag-remove{cursor:pointer;color:rgba(26,26,24,.4);font-size:14px;line-height:1;}
+.email-tag-remove:hover{color:var(--red);}
+.email-tag-input{border:none;outline:none;font-size:12px;background:transparent;color:var(--ink);flex:1;min-width:150px;font-family:"Inter",sans-serif;}
+.email-tag-input::placeholder{color:rgba(26,26,24,.3);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-of-type{border-bottom:none;}
+.toggle-lbl{font-size:12px;font-weight:600;color:var(--ink);}
+.toggle-desc{font-size:10px;color:rgba(26,26,24,.45);margin-top:2px;}
+.tog{position:relative;width:40px;height:22px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;position:absolute;}
+.tog-sl{position:absolute;inset:0;background:rgba(26,26,24,.15);border-radius:22px;cursor:pointer;transition:background .25s;}
+.tog-sl:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;}
+.tog input:checked+.tog-sl{background:var(--green);}
+.tog input:checked+.tog-sl:before{transform:translateX(18px);}
+.select-input{width:100%;padding:8px 10px;font-size:12px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;color:var(--ink);margin-bottom:12px;cursor:pointer;outline:none;font-family:"Inter",sans-serif;}
+.btn-sol{padding:9px 18px;background:var(--ink);border:none;border-radius:7px;font-family:"Syne",sans-serif;font-weight:700;font-size:11px;letter-spacing:.05em;color:var(--cream);cursor:pointer;transition:all .18s;}
+.btn-sol:hover{background:var(--gold);color:var(--ink);}
+.btn-sol:disabled{opacity:.45;cursor:not-allowed;}
+.btn-sol.gold{background:var(--gold);color:var(--ink);}
+.btn-sol.gold:hover{background:var(--gold-d);color:#fff;}
+.btn-out{padding:9px 16px;background:transparent;border:1.5px solid var(--border2);border-radius:7px;font-family:"Inter",sans-serif;font-size:11px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .18s;}
+.btn-out:hover{border-color:var(--ink);background:var(--ink);color:var(--cream);}
+
+/* SEND STATUS */
+.send-status{display:none;margin:0 16px 14px;font-size:12px;padding:9px 12px;border-radius:7px;}
+.send-status.ok{background:rgba(61,122,90,.1);border:1px solid rgba(61,122,90,.2);color:#2a6645;display:block;}
+.send-status.err{background:rgba(201,64,64,.08);border:1px solid rgba(201,64,64,.18);color:#8B2020;display:block;}
+.send-status.sending{background:rgba(26,26,24,.05);border:1px solid var(--border);color:rgba(26,26,24,.5);display:block;}
+
+/* ALERT LOG */
+.log-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;}
+.log-row:last-child{border-bottom:none;}
+.log-time{color:rgba(26,26,24,.4);min-width:120px;flex-shrink:0;font-family:"DM Mono",monospace;font-size:11px;}
+.log-msg{color:var(--ink);flex:1;}
+
+/* THRESHOLD */
+.thresh-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border:1.5px solid var(--border);border-radius:9px;margin-bottom:10px;}
+.thresh-label{font-size:13px;font-weight:600;color:var(--ink);}
+.thresh-sub{font-size:11px;color:rgba(26,26,24,.45);margin-top:2px;}
+.thresh-ctrl{display:flex;align-items:center;gap:7px;}
+.thresh-ctrl input{width:58px;text-align:center;font-size:14px;font-weight:700;padding:6px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;color:var(--ink);outline:none;font-family:"DM Mono",monospace;}
+.thresh-ctrl span{font-size:11px;color:rgba(26,26,24,.4);}
+
+/* SETUP */
+.setup-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;}
+.setup-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:14px;letter-spacing:.02em;}
+.tag-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);}
+.tag-row:last-child{border-bottom:none;}
+.tag-code{font-family:"DM Mono",monospace;font-size:11px;background:#EAE7D8;border-radius:4px;padding:3px 9px;color:var(--ink);min-width:130px;flex-shrink:0;font-weight:500;}
+.step-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+.step-row:last-child{margin-bottom:0;}
+.step-num{width:24px;height:24px;border-radius:50%;background:#EAE7D8;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:var(--ink);font-family:"Syne",sans-serif;}
+.step-text{font-size:12px;color:rgba(26,26,24,.6);line-height:1.6;padding-top:3px;}
+.inline-code{font-family:"DM Mono",monospace;font-size:11px;background:#EAE7D8;padding:1px 5px;border-radius:3px;color:var(--ink);}
+
+/* EMPTY / LOADING */
+.empty-state{padding:40px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:9px;font-size:12px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;border-left:3px solid var(--gold);}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.ok{border-left-color:var(--green);}
+.toast.err{border-left-color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">
+      <img src="data:image/png;base64,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" alt="FoldifyCase" style="width:30px;height:30px;object-fit:contain;display:block;">
+    </div>
+    <div class="logo-text">
+      <div class="logo-name">FOLDIFYCASE</div>
+      <div class="logo-sub">Warehouse Manager</div>
+    </div>
+  </div>
+  <div class="pills">
+    <div class="pill"><div class="dot-g" id="syncDot"></div><span id="syncInfo">Connecting…</span></div>
+    <div class="pill"><div class="dot-gold"></div><span id="storePill">scnd9y-a1.myshopify.com</span></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-lbl">Stats</div>
+    </div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-n" id="ss-skus">—</div><div class="sb-stat-l">SKUs</div></div>
+      <div class="sb-stat"><div class="sb-stat-n" id="ss-units">—</div><div class="sb-stat-l">Units</div></div>
+      <div class="sb-stat"><div class="sb-stat-n red" id="ss-crit">—</div><div class="sb-stat-l">Critical</div></div>
+      <div class="sb-stat"><div class="sb-stat-n" style="color:#C8A96E" id="ss-low">—</div><div class="sb-stat-l">Low</div></div>
+    </div>
+
+    <div class="sync-box">
+      <button class="btn-sync" onclick="startLoad()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M13 8A5 5 0 113 8h2L2 4 0 8h2a6 6 0 1010.9-3.5L14 3a8 8 0 01-1 5z"/></svg>
+        Sync Shopify
+      </button>
+      <div class="sync-time" id="syncTime">—</div>
+    </div>
+
+    <hr class="sb-divider">
+
+    <div class="sb-section">
+      <div class="sb-lbl">Manage</div>
+    </div>
+    <div style="padding:0 10px 4px;">
+      <button class="nav-btn active" onclick="setView('overview',this)" id="navOverview">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Overview
+      </button>
+      <button class="nav-btn" onclick="setView('stock',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="2" rx="1"/><rect x="1" y="7" width="14" height="2" rx="1"/><rect x="1" y="11" width="14" height="2" rx="1"/></svg>
+        All Stock
+      </button>
+      <button class="nav-btn" onclick="setView('reorder',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2l1.8 3.6L14 6.3l-3 2.9.7 4.1L8 11.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        Reorder Queue
+      </button>
+      <button class="nav-btn" onclick="setView('popular',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 13l2-5 2 2 2-4 2 3 2-6 2 10H2z"/></svg>
+        Top Sellers <span style="font-size:9px;color:rgba(255,255,255,.3);margin-left:3px">90d</span>
+      </button>
+    </div>
+
+    <hr class="sb-divider">
+
+    <div class="sb-section">
+      <div class="sb-lbl">Alerts</div>
+    </div>
+    <div style="padding:0 10px 4px;">
+      <button class="nav-btn" onclick="setView('alerts',this)" id="navAlerts">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 015 5v3l1 2H2l1-2V6a5 5 0 015-5zM6.5 13a1.5 1.5 0 003 0"/></svg>
+        Email Alerts
+        <span class="nav-alert-dot" id="alertNavDot"></span>
+      </button>
+    </div>
+
+    <hr class="sb-divider">
+
+    <div class="sb-section">
+      <div class="sb-lbl">Settings</div>
+    </div>
+    <div style="padding:0 10px 16px;">
+      <button class="nav-btn" onclick="setView('thresholds',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
+        Thresholds
+      </button>
+      <button class="nav-btn" onclick="setView('setup',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2zM2 7h8v2H2zM2 11h5v2H2z"/></svg>
+        Tag Setup Guide
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">WAREHOUSE <em id="whTitle">US</em></div>
+          <div class="page-sub" id="whSub">Loading stock data from Shopify…</div>
+        </div>
+      </div>
+
+      <!-- WAREHOUSE TABS -->
+      <div class="wh-bar">
+        <button class="whtab active-us" id="tab-us" onclick="setWarehouse('us')">
+          <div class="wh-bar-dot" style="background:rgba(59,79,140,.5)"></div>
+          US Warehouse <span class="whtab-count" id="cnt-us">—</span>
+        </button>
+        <button class="whtab" id="tab-uk" onclick="setWarehouse('uk')">
+          <div class="wh-bar-dot" style="background:var(--c-uk)"></div>
+          UK Warehouse <span class="whtab-count" id="cnt-uk">—</span>
+        </button>
+        <button class="whtab" id="tab-au" onclick="setWarehouse('au')">
+          <div class="wh-bar-dot" style="background:var(--c-au)"></div>
+          AU Warehouse <span class="whtab-count" id="cnt-au">—</span>
+        </button>
+        <button class="whtab" id="tab-all" onclick="setWarehouse('all')">
+          <div class="wh-bar-dot" style="background:rgba(26,26,24,.3)"></div>
+          All Warehouses <span class="whtab-count" id="cnt-all">—</span>
+        </button>
+      </div>
+
+      <div class="alert-banner" id="alertBanner">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"><path d="M8 1L15 14H1L8 1z"/><rect x="7.3" y="5.5" width="1.4" height="4" fill="white"/><circle cx="8" cy="11.5" r=".9" fill="white"/></svg>
+        <span id="alertMsg"></span>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-card-label">Stocked SKUs</div><div class="stat-card-value" id="s-skus">—</div><div class="stat-card-sub" id="s-wh">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Total Units</div><div class="stat-card-value" id="s-units">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Low Stock</div><div class="stat-card-value warn" id="s-low">—</div><div class="stat-card-sub">need attention</div></div>
+        <div class="stat-card"><div class="stat-card-label">Critical</div><div class="stat-card-value danger" id="s-crit">—</div><div class="stat-card-sub">reorder now</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr">
+            <div>
+              <div class="card-title" id="tableTitle">STOCK LEVELS</div>
+              <div class="card-sub" id="tableSub">—</div>
+            </div>
+            <div class="chips">
+              <button class="chip active" onclick="setChip('all',this)">All</button>
+              <button class="chip" onclick="setChip('critical',this)">Critical</button>
+              <button class="chip" onclick="setChip('low',this)">Low</button>
+            </div>
+          </div>
+          <div id="mainTable"><div class="empty-state"><div class="spinner"></div>Connecting to Shopify…</div></div>
+        </div>
+
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-hdr"><div class="card-title">REORDER PRIORITY</div></div>
+          <div class="pri-list" id="priList"><div class="empty-state"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL STOCK -->
+    <div class="view" id="view-stock">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">ALL <em>STOCK</em></div>
+          <div class="page-sub" id="stockSub">—</div>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" class="search-input" placeholder="Search products…" oninput="doSearch(this.value)">
+      </div>
+      <div class="card"><div id="fullTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
+    </div>
+
+    <!-- REORDER -->
+    <div class="view" id="view-reorder">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">REORDER <em>QUEUE</em></div>
+          <div class="page-sub" id="reorderSub">Sorted by urgency — most critical first</div>
+        </div>
+      </div>
+      <div class="card"><div id="reorderTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
+    </div>
+
+    <!-- TOP SELLERS -->
+    <div class="view" id="view-popular">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">TOP <em>SELLERS</em></div>
+          <div class="page-sub" id="popularSub">Ranked by units sold — last 90 days · live from Shopify orders</div>
+        </div>
+      </div>
+      <div class="card"><div id="popularTable"><div class="empty-state"><div class="spinner"></div>Fetching 90-day sales data…</div></div></div>
+    </div>
+
+    <!-- EMAIL ALERTS -->
+    <div class="view" id="view-alerts">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">EMAIL <em>ALERTS</em></div>
+          <div class="page-sub">Configure who gets notified and when — powered by Resend</div>
+        </div>
+      </div>
+
+      <div class="alert-grid">
+        <div class="alert-card">
+          <div class="alert-card-title">Recipients</div>
+          <div class="alert-card-sub">Press Enter or comma after each email address to add it to the list.</div>
+          <div class="field-lbl">Warehouse team emails</div>
+          <div class="email-tag-wrap" id="emailTagWrap" onclick="document.getElementById('emailTagInput').focus()">
+            <input type="text" class="email-tag-input" id="emailTagInput" placeholder="name@company.com" onkeydown="handleEmailKey(event)">
+          </div>
+          <div class="field-lbl">From name</div>
+          <input class="field-input" type="text" id="fromName" value="FoldifyCase Warehouse" placeholder="FoldifyCase Warehouse">
+          <div class="field-lbl">From email <span style="font-size:10px;color:rgba(26,26,24,.4)">(must be verified in Resend)</span></div>
+          <input class="field-input" type="email" id="fromEmail" placeholder="alerts@yourdomain.com">
+          <button class="btn-sol" style="width:100%" onclick="saveRecipients()">Save Recipients</button>
+          <div id="recipSaved" style="display:none;font-size:11px;color:var(--green);margin-top:8px;font-weight:500">✓ Recipients saved</div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-card-title">Alert Triggers</div>
+          <div class="alert-card-sub">Choose when the system sends automatic alerts to your warehouse team.</div>
+
+          <div class="toggle-row">
+            <div><div class="toggle-lbl">Weekly digest</div><div class="toggle-desc">Summary of all low and critical stock</div></div>
+            <label class="tog"><input type="checkbox" id="togWeekly" checked><div class="tog-sl"></div></label>
+          </div>
+          <div style="padding:10px 0 4px">
+            <div class="field-lbl">Send on</div>
+            <select class="select-input" id="digestDay">
+              <option value="1" selected>Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+            </select>
+            <div class="field-lbl">At</div>
+            <select class="select-input" id="digestTime">
+              <option value="07:00">7:00 AM</option><option value="08:00" selected>8:00 AM</option><option value="09:00">9:00 AM</option><option value="10:00">10:00 AM</option>
+            </select>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-lbl">Critical stock alerts</div><div class="toggle-desc">Instant alert when any product hits critical level</div></div>
+            <label class="tog"><input type="checkbox" id="togCritical" checked><div class="tog-sl"></div></label>
+          </div>
+          <button class="btn-sol" style="width:100%;margin-top:14px" onclick="saveTriggers()">Save Triggers</button>
+          <div id="triggerSaved" style="display:none;font-size:11px;color:var(--green);margin-top:8px;font-weight:500">✓ Triggers saved</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title">SEND ALERT NOW</div>
+            <div class="card-sub">Manually send a stock report to your warehouse team</div>
+          </div>
+        </div>
+        <div style="padding:16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <div class="field-lbl" style="margin-bottom:5px">Alert type</div>
+            <select class="select-input" id="alertType" style="margin-bottom:0">
+              <option value="critical">Critical stock only</option>
+              <option value="low" selected>Low + critical stock</option>
+              <option value="full">Full stock report</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:140px">
+            <div class="field-lbl" style="margin-bottom:5px">Warehouse</div>
+            <select class="select-input" id="alertWh" style="margin-bottom:0">
+              <option value="us">US Warehouse</option>
+              <option value="uk">UK Warehouse</option>
+              <option value="au">AU Warehouse</option>
+              <option value="all">All Warehouses</option>
+            </select>
+          </div>
+          <button class="btn-sol" id="sendAlertBtn" onclick="sendAlert()" style="white-space:nowrap;padding:9px 20px">Send Alert</button>
+        </div>
+        <div class="send-status" id="sendStatus"></div>
+      </div>
+
+      <div class="page-hdr" style="margin-bottom:10px">
+        <div class="page-title" style="font-size:16px">ALERT <em>HISTORY</em></div>
+      </div>
+      <div class="card"><div id="alertLog"><div class="log-row"><span class="log-time">—</span><span class="log-msg" style="color:rgba(26,26,24,.35)">No alerts sent yet</span></div></div></div>
+    </div>
+
+    <!-- THRESHOLDS -->
+    <div class="view" id="view-thresholds">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">STOCK <em>THRESHOLDS</em></div>
+          <div class="page-sub">Applies across all warehouses — changes take effect immediately</div>
+        </div>
+      </div>
+      <div class="thresh-item">
+        <div><div class="thresh-label">Critical</div><div class="thresh-sub">Immediate reorder required — triggers instant email alert</div></div>
+        <div class="thresh-ctrl"><input type="number" id="critT" value="5" step="1"><span>units</span></div>
+      </div>
+      <div class="thresh-item">
+        <div><div class="thresh-label">Low Stock</div><div class="thresh-sub">Plan to reorder soon — included in weekly digest emails</div></div>
+        <div class="thresh-ctrl"><input type="number" id="lowT" value="20" step="1"><span>units</span></div>
+      </div>
+      <button class="btn-sol" onclick="saveThresh()" style="margin-top:4px">Save Thresholds</button>
+      <div id="savedMsg" style="display:none;font-size:11px;color:var(--green);margin-top:10px;font-weight:500">✓ Saved — all views updated</div>
+    </div>
+
+    <!-- TAG SETUP -->
+    <div class="view" id="view-setup">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">TAG <em>SETUP</em></div>
+          <div class="page-sub">Add these tags in Shopify so each product appears in the correct warehouse view</div>
+        </div>
+      </div>
+      <div class="setup-card">
+        <div class="setup-title">Your Tag System</div>
+        <div class="tag-row"><span class="tag-code">warehouse:us</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in US warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
+        <div class="tag-row"><span class="tag-code">warehouse:uk</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in UK warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
+        <div class="tag-row"><span class="tag-code">warehouse:au</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in AU warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
+        <div class="tag-row"><span class="tag-code">dropship</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Supplier ships direct — hidden from all views</span><span class="badge b-crit"><div class="bdot"></div>Excluded</span></div>
+      </div>
+      <div class="setup-card">
+        <div class="setup-title">How to Bulk-Tag in Shopify</div>
+        <div class="step-row"><div class="step-num">1</div><div class="step-text">Go to <strong>Shopify Admin → Products</strong>. Filter to your US warehouse products and select all with the checkbox.</div></div>
+        <div class="step-row"><div class="step-num">2</div><div class="step-text">Click <strong>Actions → Add tags</strong>. Type <span class="inline-code">warehouse:us</span> and save. Repeat for UK with <span class="inline-code">warehouse:uk</span> and AU with <span class="inline-code">warehouse:au</span>.</div></div>
+        <div class="step-row"><div class="step-num">3</div><div class="step-text">For dropship-only products add tag <span class="inline-code">dropship</span>. These are automatically hidden from every warehouse view.</div></div>
+      </div>
+      <div class="setup-card" style="margin-bottom:0">
+        <div class="setup-title">Adding a New Market Later</div>
+        <div style="font-size:12px;color:rgba(26,26,24,.55);line-height:1.6">Tag products with <span class="inline-code">warehouse:xx</span> in Shopify, then update this app to add a new tab. No other code changes needed.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tMsg"></span></div>
+
+<script>
+const PROXY = 'https://foldifycase-warehouse.vercel.app/api/proxy';
+let allProducts = [], salesData = {}, activeWarehouse = 'us', activeFilter = 'all';
+let critT = 5, lowT = 20, emailRecipients = [], alertLog = [];
+
+const WH = {
+  us:{label:'US Warehouse',short:'US',color:'#3B4F8C'},
+  uk:{label:'UK Warehouse',short:'UK',color:'#8B1A2A'},
+  au:{label:'AU Warehouse',short:'AU',color:'#1A6B4A'},
+  all:{label:'All Warehouses',short:'ALL',color:'#3D3D38'}
+};
+
+function status(qty){return qty<=critT?'critical':qty<=lowT?'low':'ok';}
+function parseWH(tags){const t=(tags||'').toLowerCase();const o=[];if(t.includes('warehouse:us'))o.push('us');if(t.includes('warehouse:uk'))o.push('uk');if(t.includes('warehouse:au'))o.push('au');return o;}
+function isDS(tags){return(tags||'').toLowerCase().includes('dropship');}
+function filtered(){return activeWarehouse==='all'?allProducts:allProducts.filter(p=>p.warehouses.includes(activeWarehouse));}
+function maxQ(p){return Math.max(...p.map(x=>x.qty),lowT*2,1);}
+
+async function startLoad(){
+  const dot=document.getElementById('syncDot');
+  dot.className='dot-warn';
+  document.getElementById('syncInfo').textContent='Syncing…';
+  document.getElementById('mainTable').innerHTML='<div class="empty-state"><div class="spinner"></div>Fetching products from Shopify…</div>';
+  try{
+    const [pr,or]=await Promise.all([
+      fetch(`${PROXY}?service=shopify&action=products&limit=250`),
+      fetch(`${PROXY}?service=shopify&action=orders&days=90&limit=250`)
+    ]);
+    const pd=await pr.json(),od=await or.json();
+    processSales(od.orders||[]);
+    processProducts(pd.products||[]);
+    dot.className='dot-g';
+    const t=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('syncInfo').textContent='Live · synced '+t;
+    document.getElementById('syncTime').textContent='Last sync: '+t;
+    showToast('Shopify synced successfully','ok');
+    renderAll();
+  }catch(e){
+    dot.className='dot-err';
+    document.getElementById('syncInfo').textContent='Connection failed';
+    document.getElementById('mainTable').innerHTML='<div class="empty-state" style="color:var(--red)">Could not reach proxy.<br><small style="color:rgba(26,26,24,.4)">Check SHOPIFY_STORE and SHOPIFY_TOKEN in Vercel env vars.</small></div>';
+    showToast('Connection failed — loading demo data','err');
+    loadDemo();
+  }
+}
+
+function processSales(orders){
+  salesData={};
+  orders.forEach(o=>(o.line_items||[]).forEach(i=>{const id=String(i.product_id);salesData[id]=(salesData[id]||0)+i.quantity;}));
+}
+
+function processProducts(raw){
+  const noTags=raw.every(p=>!(p.tags||'').includes('warehouse:'));
+  allProducts=raw.filter(p=>!isDS(p.tags)).map(p=>{
+    const v=p.variants||[];
+    const tracked=v.filter(x=>x.inventory_management==='shopify');
+    const qty=tracked.reduce((s,x)=>s+(parseInt(x.inventory_quantity)||0),0);
+    let wh=parseWH(p.tags);
+    if(noTags&&qty>0)wh=['us','uk','au'];
+    if(!wh.length)return null;
+    return{id:p.id,title:p.title,qty,variants:v.length,status:status(qty),sold90:salesData[String(p.id)]||0,price:parseFloat(v[0]?.price||0).toFixed(2),warehouses:wh};
+  }).filter(Boolean);
+}
+
+function loadDemo(){
+  salesData={'1':143,'2':98,'3':201,'4':87,'5':44,'6':112,'7':33,'8':76,'9':155,'10':67,'11':189,'12':29};
+  allProducts=[
+    {id:'1',title:'Carbon Fiber MagSafe Ring Case Z Fold 6',qty:3,status:'critical',sold90:143,price:'49.99',variants:3,warehouses:['us']},
+    {id:'2',title:'Leather Wallet Case Z Fold 6 Navy',qty:7,status:'low',sold90:98,price:'44.99',variants:4,warehouses:['us','uk']},
+    {id:'3',title:'Clear Slim Case Z Flip 6',qty:2,status:'critical',sold90:201,price:'24.99',variants:5,warehouses:['us']},
+    {id:'4',title:'Titanium Stand Ring Z Fold 6',qty:5,status:'critical',sold90:87,price:'54.99',variants:2,warehouses:['us','au','uk']},
+    {id:'5',title:'Rugged Armor Z Fold 6 Black',qty:13,status:'low',sold90:44,price:'32.99',variants:3,warehouses:['uk']},
+    {id:'6',title:'Classic Leather Z Flip 6 Beige',qty:19,status:'low',sold90:112,price:'39.99',variants:2,warehouses:['au']},
+    {id:'7',title:'Hinge Cover Z Fold 6 White',qty:25,status:'ok',sold90:33,price:'29.99',variants:3,warehouses:['uk','au']},
+    {id:'8',title:'Soft Silicone Z Flip 6 Sage',qty:41,status:'ok',sold90:76,price:'19.99',variants:6,warehouses:['us','au','uk']},
+    {id:'9',title:'Gold Ring Luxury Z Flip 6',qty:34,status:'ok',sold90:155,price:'59.99',variants:2,warehouses:['au']},
+    {id:'10',title:'Privacy Screen Z Fold 6',qty:9,status:'low',sold90:67,price:'27.99',variants:1,warehouses:['us','uk']},
+    {id:'11',title:'MagSafe Leather Folio Z Fold 6',qty:4,status:'critical',sold90:189,price:'64.99',variants:2,warehouses:['uk']},
+    {id:'12',title:'Slim Matte Case Z Flip 6',qty:31,status:'ok',sold90:29,price:'22.99',variants:4,warehouses:['au','uk']},
+  ];
+  document.getElementById('syncInfo').textContent='Demo mode — proxy offline';
+  document.getElementById('syncTime').textContent='Demo data';
+  renderAll();
+}
+
+function updateCounts(){
+  ['us','uk','au'].forEach(w=>document.getElementById('cnt-'+w).textContent=allProducts.filter(p=>p.warehouses.includes(w)).length);
+  document.getElementById('cnt-all').textContent=allProducts.length;
+}
+
+function renderAll(){
+  updateCounts();
+  const p=filtered(),wh=WH[activeWarehouse];
+  document.getElementById('whTitle').textContent=wh.short;
+  document.getElementById('whSub').textContent=p.length+' products with stock tracked at '+wh.label;
+  document.getElementById('s-skus').textContent=p.length;
+  document.getElementById('s-units').textContent=p.reduce((s,x)=>s+x.qty,0).toLocaleString();
+  document.getElementById('s-low').textContent=p.filter(x=>x.status==='low').length;
+  document.getElementById('s-crit').textContent=p.filter(x=>x.status==='critical').length;
+  document.getElementById('s-wh').textContent=wh.label;
+  document.getElementById('ss-skus').textContent=p.length;
+  document.getElementById('ss-units').textContent=p.reduce((s,x)=>s+x.qty,0);
+  document.getElementById('ss-low').textContent=p.filter(x=>x.status==='low').length;
+  document.getElementById('ss-crit').textContent=p.filter(x=>x.status==='critical').length;
+  document.getElementById('stockSub').textContent=p.length+' products · '+wh.label;
+  document.getElementById('reorderSub').textContent='Sorted by urgency · '+wh.label;
+  document.getElementById('popularSub').textContent='Ranked by units sold — last 90 days · '+wh.label;
+  const crit=p.filter(x=>x.status==='critical').length;
+  const ab=document.getElementById('alertBanner');
+  if(crit>0){ab.style.display='flex';document.getElementById('alertMsg').textContent=crit+' product'+(crit>1?'s':'')+' critically low at '+wh.label+' — reorder immediately.';}
+  else ab.style.display='none';
+  document.getElementById('alertNavDot').style.display=crit>0?'inline-block':'none';
+  document.getElementById('tableSub').textContent=wh.label+' · '+p.length+' products';
+  renderMainTable(p);renderPriority(p);renderFullTable(p);renderReorder(p);renderPopular(p);
+}
+
+function whDots(whs){return`<div class="mkt-dots">${whs.map(w=>`<div class="mkt-d" style="background:${WH[w].color}" title="${WH[w].label}"></div>`).join('')}</div>`;}
+
+function tblHTML(prods,showWh){
+  if(!prods.length)return'<div class="empty-state">No products match this filter.</div>';
+  const mx=maxQ(prods);
+  return`<div class="tbl-wrap"><table><thead><tr>
+    <th style="width:${showWh?'30%':'36%'}">Product</th>
+    ${showWh?'<th style="width:9%">Markets</th>':''}
+    <th style="width:18%">Stock Level</th>
+    <th style="width:7%">Units</th>
+    <th style="width:12%">Status</th>
+    <th style="width:12%">Demand</th>
+  </tr></thead><tbody>${prods.map(p=>{
+    const pct=Math.round((p.qty/mx)*100);
+    const fc=p.status==='critical'?'fill-crit':p.status==='low'?'fill-low':'fill-ok';
+    const bdg=p.status==='critical'
+      ?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>'
+      :p.status==='low'
+      ?'<span class="badge b-low"><div class="bdot"></div>Low</span>'
+      :'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
+    const sn=Math.min(5,Math.ceil((p.sold90||0)/40));
+    const stars=Array.from({length:5},(_,i)=>`<svg width="9" height="9" viewBox="0 0 10 10" fill="${i<sn?'#C8A96E':'#DDD'}"><polygon points="5,1 6.5,4 9,4 7,6 8,9 5,7 2,9 3,6 1,4 3.5,4"/></svg>`).join('');
+    return`<tr>
+      <td><div class="pname">${p.title}</div><div class="pmeta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div></td>
+      ${showWh?`<td>${whDots(p.warehouses)}</td>`:''}
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${fc}" style="width:${pct}%"></div></div></div></td>
+      <td><span class="qty-num">${p.qty}</span></td>
+      <td>${bdg}</td>
+      <td><div class="stars">${stars}</div></td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all');}
+function renderFullTable(p){document.getElementById('fullTable').innerHTML=tblHTML(p,activeWarehouse==='all');}
+
+function renderPriority(p){
+  const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>(a.status==='critical'?0:1)-(b.status==='critical'?0:1)||b.sold90-a.sold90).slice(0,7);
+  if(!list.length){document.getElementById('priList').innerHTML='<div class="empty-state" style="color:var(--green)">✓ All stock levels healthy</div>';return;}
+  document.getElementById('priList').innerHTML=list.map((x,i)=>`
+    <div class="pri-row">
+      <div class="pri-num ${i<3?'p'+(i+1):''}">${i+1}</div>
+      <div class="pri-info">
+        <div class="pri-name">${x.title}</div>
+        <div class="pri-det">${x.qty} units left · ${x.sold90} sold in 90d</div>
+      </div>
+      <span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span>
+    </div>`).join('');
+}
+
+function renderReorder(p){
+  const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>a.qty-b.qty);
+  if(!list.length){document.getElementById('reorderTable').innerHTML='<div class="empty-state" style="color:var(--green)">✓ No products need reordering right now</div>';return;}
+  const mx=maxQ(p);
+  document.getElementById('reorderTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
+    <th style="width:4%">#</th><th style="width:35%">Product</th><th style="width:16%">Stock</th>
+    <th style="width:7%">Units</th><th style="width:10%">Sold 90d</th><th style="width:14%">Suggest Order</th><th style="width:14%">Status</th>
+  </tr></thead><tbody>${list.map((x,i)=>`<tr>
+    <td style="color:rgba(26,26,24,.3);font-size:11px;font-family:'DM Mono',monospace">${i+1}</td>
+    <td><div class="pname">${x.title}</div>${activeWarehouse==='all'?`<div class="pmeta">${whDots(x.warehouses)}</div>`:''}</td>
+    <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${x.status==='critical'?'fill-crit':'fill-low'}" style="width:${Math.round((x.qty/mx)*100)}%"></div></div></div></td>
+    <td><span class="qty-num">${x.qty}</span></td>
+    <td><span class="sales-chip">${x.sold90}</span></td>
+    <td style="font-size:11px;color:rgba(26,26,24,.5);font-family:'DM Mono',monospace">${Math.max(50-x.qty,10)} units</td>
+    <td><span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderPopular(p){
+  const list=[...p].sort((a,b)=>b.sold90-a.sold90);
+  const mx=Math.max(...list.map(x=>x.sold90),1);
+  document.getElementById('popularTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
+    <th style="width:5%">Rank</th><th style="width:33%">Product</th><th style="width:12%">Sold 90d</th>
+    <th style="width:14%">Sales Trend</th><th style="width:8%">Stock</th><th style="width:12%">Status</th><th style="width:16%">Action</th>
+  </tr></thead><tbody>${list.map((x,i)=>{
+    const bdg=x.status==='critical'?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>':x.status==='low'?'<span class="badge b-low"><div class="bdot"></div>Low</span>':'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
+    const act=x.status!=='ok'&&x.sold90>50?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
+    return`<tr>
+      <td style="font-family:'DM Mono',monospace;font-weight:500;font-size:12px;color:rgba(26,26,24,.4)">#${i+1}</td>
+      <td><div class="pname">${x.title}</div><div class="pmeta">$${x.price}</div></td>
+      <td><span class="sales-chip">${x.sold90}</span></td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill fill-sales" style="width:${Math.round((x.sold90/mx)*100)}%"></div></div></div></td>
+      <td><span class="qty-num">${x.qty}</span></td>
+      <td>${bdg}</td>
+      <td>${act}</td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+function setWarehouse(w){
+  activeWarehouse=w;
+  document.querySelectorAll('.whtab').forEach(t=>{t.className='whtab';});
+  const tab=document.getElementById('tab-'+w);
+  const cls=w==='all'?'active':`active-${w}`;
+  tab.classList.add(cls);
+  activeFilter='all';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.chip')[0].classList.add('active');
+  if(allProducts.length)renderAll();
+}
+
+function setView(v,el){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setChip(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderMainTable(filtered());
+}
+
+function doSearch(q){document.getElementById('fullTable').innerHTML=tblHTML(filtered().filter(p=>p.title.toLowerCase().includes(q.toLowerCase())),activeWarehouse==='all');}
+
+function saveThresh(){
+  critT=parseInt(document.getElementById('critT').value)||5;
+  lowT=parseInt(document.getElementById('lowT').value)||20;
+  allProducts=allProducts.map(p=>({...p,status:status(p.qty)}));
+  renderAll();
+  const m=document.getElementById('savedMsg');m.style.display='block';setTimeout(()=>m.style.display='none',2500);
+  showToast('Thresholds updated','ok');
+}
+
+function handleEmailKey(e){
+  if(e.key==='Enter'||e.key===','){e.preventDefault();addEmail(e.target.value.trim());}
+  if(e.key==='Backspace'&&e.target.value===''&&emailRecipients.length)removeEmail(emailRecipients.length-1);
+}
+function addEmail(email){if(!email||!email.includes('@'))return;if(emailRecipients.includes(email))return;emailRecipients.push(email);renderTags();}
+function removeEmail(i){emailRecipients.splice(i,1);renderTags();}
+function renderTags(){
+  const wrap=document.getElementById('emailTagWrap'),input=document.getElementById('emailTagInput');
+  wrap.innerHTML='';
+  emailRecipients.forEach((e,i)=>{const t=document.createElement('div');t.className='email-tag';t.innerHTML=`<span>${e}</span><span class="email-tag-remove" onclick="removeEmail(${i})">×</span>`;wrap.appendChild(t);});
+  wrap.appendChild(input);input.focus();
+}
+function saveRecipients(){const m=document.getElementById('recipSaved');m.style.display='block';setTimeout(()=>m.style.display='none',2500);showToast('Recipients saved','ok');}
+function saveTriggers(){const m=document.getElementById('triggerSaved');m.style.display='block';setTimeout(()=>m.style.display='none',2500);showToast('Triggers saved','ok');}
+
+async function sendAlert(){
+  if(!emailRecipients.length){showSendStatus('Add at least one recipient email first.','err');return;}
+  const type=document.getElementById('alertType').value;
+  const wh=document.getElementById('alertWh').value;
+  const btn=document.getElementById('sendAlertBtn');
+  btn.disabled=true;btn.textContent='Sending…';
+  showSendStatus('Sending alert…','sending');
+  const prods=wh==='all'?allProducts:allProducts.filter(p=>p.warehouses.includes(wh));
+  const toSend=type==='critical'?prods.filter(p=>p.status==='critical'):type==='low'?prods.filter(p=>p.status!=='ok'):prods;
+  try{
+    const r=await fetch(`${PROXY}?service=alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:emailRecipients,from_name:document.getElementById('fromName').value,from_email:document.getElementById('fromEmail').value,subject:`FoldifyCase Stock Alert — ${WH[wh].label}`,type,warehouse:WH[wh].label,products:toSend})});
+    if(r.ok){showSendStatus('✓ Alert sent to '+emailRecipients.join(', '),'ok');addLog('Manual alert','Low + critical · '+WH[wh].label,'ok');showToast('Alert sent successfully','ok');}
+    else throw new Error();
+  }catch(e){showSendStatus('Could not send — check RESEND_API_KEY in Vercel env vars.','err');addLog('Manual alert','Failed — proxy error','err');showToast('Send failed','err');}
+  btn.disabled=false;btn.textContent='Send Alert';
+}
+
+function showSendStatus(msg,type){const el=document.getElementById('sendStatus');el.textContent=msg;el.className='send-status '+type;}
+
+function addLog(type,detail,s){
+  const now=new Date().toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  alertLog.unshift({time:now,type,detail,s});
+  document.getElementById('alertLog').innerHTML=alertLog.map(l=>`<div class="log-row"><span class="log-time">${l.time}</span><span class="log-msg">${l.type} — ${l.detail}</span><span class="badge ${l.s==='ok'?'b-ok':'b-crit'}" style="flex-shrink:0"><div class="bdot"></div>${l.s==='ok'?'Sent':'Failed'}</span></div>`).join('');
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  document.getElementById('tMsg').textContent=msg;
+  t.className='toast '+(type||'ok')+' show';
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+startLoad();
+</script>
+</body>
+</html>
