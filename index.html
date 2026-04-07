@@ -31,8 +31,8 @@ body{background:var(--cream);color:var(--ink);font-family:"Inter",sans-serif;fon
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* WAREHOUSE TABS — like country tabs in fulfilment */
-.wh-bar{display:flex;gap:8px;padding:14px 24px;background:var(--cream);flex-wrap:wrap;margin-bottom:18px;}
-.whtab{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1.5px solid var(--border2);border-radius:30px;background:#fff;font-family:"Inter",sans-serif;font-size:12px;font-weight:500;color:rgba(26,26,24,.6);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.wh-bar{display:flex;gap:6px;padding:0 0 12px 0;background:var(--cream);flex-wrap:wrap;margin-bottom:12px;}
+.whtab{display:flex;align-items:center;gap:6px;padding:6px 13px;border:1.5px solid var(--border2);border-radius:30px;background:#fff;font-family:"Inter",sans-serif;font-size:12px;font-weight:500;color:rgba(26,26,24,.6);cursor:pointer;transition:all .18s;white-space:nowrap;}
 .whtab:hover{border-color:var(--ink);color:var(--ink);}
 .whtab.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
 .whtab.active-us{background:var(--c-us);color:#fff;border-color:var(--c-us);}
@@ -48,58 +48,58 @@ body{background:var(--cream);color:var(--ink);font-family:"Inter",sans-serif;fon
 
 /* SIDEBAR */
 .sidebar{background:#3D3D38;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow-y:auto;}
-.sb-section{padding:16px 18px 0;}
+.sb-section{padding:12px 14px 0;}
 .sb-lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-family:"Syne",sans-serif;}
-.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.55);font-family:"Inter",sans-serif;font-size:12px;cursor:pointer;transition:all .18s;width:100%;text-align:left;margin-bottom:2px;}
+.nav-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.55);font-family:"Inter",sans-serif;font-size:12px;cursor:pointer;transition:all .18s;width:100%;text-align:left;margin-bottom:1px;}
 .nav-btn:hover{background:rgba(255,255,255,.07);color:#fff;}
 .nav-btn.active{background:rgba(200,169,110,.14);border-color:rgba(200,169,110,.28);color:var(--gold);}
 .nav-btn svg{opacity:.6;flex-shrink:0;}
 .nav-btn.active svg{opacity:1;}
 .nav-alert-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#C94040;display:none;flex-shrink:0;}
-.sb-divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:12px 18px;}
+.sb-divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:8px 14px;}
 
 /* STATS in sidebar */
-.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 18px 14px;}
-.sb-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 8px;text-align:center;}
-.sb-stat-n{font-family:"Inter",sans-serif;font-weight:700;font-size:19px;color:var(--gold);line-height:1;}
+.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 14px 10px;}
+.sb-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:8px 6px;text-align:center;}
+.sb-stat-n{font-family:"Inter",sans-serif;font-weight:700;font-size:17px;color:var(--gold);line-height:1;}
 .sb-stat-n.red{color:#e07070;}
 .sb-stat-n.green{color:#6fd6a0;}
 .sb-stat-l{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;}
 
 /* SYNC button in sidebar */
-.sync-box{padding:0 18px 16px;}
+.sync-box{padding:0 14px 10px;}
 .btn-sync{width:100%;padding:9px;background:var(--gold);color:var(--ink);border:none;border-radius:7px;font-family:"Syne",sans-serif;font-weight:700;font-size:11px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;}
 .btn-sync:hover{background:var(--gold-d);color:#fff;}
 .sync-time{font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:5px;}
 
 /* MAIN CONTENT */
-.main{padding:26px;overflow-y:auto;background:var(--cream);}
+.main{padding:18px;overflow-y:auto;background:var(--cream);}
 .view{display:none;}.view.active{display:block;}
 
 /* PAGE HEADER */
-.page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;}
+.page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;}
 .page-title{font-family:"DM Mono",monospace;font-weight:500;font-size:20px;letter-spacing:.1em;text-transform:uppercase;}
 .page-title em{font-style:normal;color:var(--gold);}
 .page-sub{font-size:12px;color:rgba(26,26,24,.45);margin-top:4px;line-height:1.5;}
 
 /* ALERT BANNER */
-.alert-banner{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:16px;font-size:12px;background:rgba(201,64,64,.08);border:1px solid rgba(201,64,64,.2);color:#8B2020;}
+.alert-banner{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:10px;font-size:12px;background:rgba(201,64,64,.08);border:1px solid rgba(201,64,64,.2);color:#8B2020;}
 
 /* STATS ROW */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
-.stat-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.stat-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;}
 .stat-card-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.4);font-weight:600;margin-bottom:6px;}
-.stat-card-value{font-family:"Syne",sans-serif;font-weight:700;font-size:26px;color:var(--ink);line-height:1;}
+.stat-card-value{font-family:"Syne",sans-serif;font-weight:700;font-size:22px;color:var(--ink);line-height:1;}
 .stat-card-value.warn{color:#B87D2A;}
 .stat-card-value.danger{color:var(--red);}
 .stat-card-sub{font-size:10px;color:rgba(26,26,24,.35);margin-top:4px;}
 
 /* TWO COL */
-.two-col{display:grid;grid-template-columns:1fr 240px;gap:14px;margin-bottom:20px;}
+.two-col{display:grid;grid-template-columns:1fr 220px;gap:10px;margin-bottom:12px;}
 
 /* CARD */
-.card{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
-.card-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#EAE7D8;}
+.card{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.card-hdr{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#EAE7D8;}
 .card-title{font-family:"Syne",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);}
 .card-sub{font-size:10px;color:rgba(26,26,24,.45);margin-top:2px;font-weight:400;text-transform:none;letter-spacing:0;}
 
@@ -112,13 +112,13 @@ body{background:var(--cream);color:var(--ink);font-family:"Inter",sans-serif;fon
 /* TABLE */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-thead th{padding:10px 14px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);background:#EAE7D8;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;}
-thead th:first-child{padding-left:18px;}
+thead th{padding:8px 12px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);background:#EAE7D8;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;}
+thead th:first-child{padding-left:16px;}
 tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#fafaf5;}
-td{padding:11px 14px;vertical-align:middle;}
-td:first-child{padding-left:18px;}
+td{padding:8px 12px;vertical-align:middle;}
+td:first-child{padding-left:16px;}
 .pname{font-weight:600;font-size:12px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
 .pmeta{font-size:10px;color:rgba(26,26,24,.4);margin-top:2px;}
 .bar-wrap{display:flex;align-items:center;gap:8px;}
@@ -146,7 +146,7 @@ td:first-child{padding-left:18px;}
 
 /* PRIORITY PANEL */
 .pri-list{display:flex;flex-direction:column;}
-.pri-row{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.pri-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);}
 .pri-row:last-child{border-bottom:none;}
 .pri-row:hover{background:#fafaf5;}
 .pri-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;background:#EAE7D8;color:rgba(26,26,24,.5);font-family:"Syne",sans-serif;}
@@ -158,15 +158,15 @@ td:first-child{padding-left:18px;}
 .pri-det{font-size:10px;color:rgba(26,26,24,.4);margin-top:1px;}
 
 /* SEARCH */
-.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap{position:relative;margin-bottom:8px;}
 .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.3;font-size:14px;pointer-events:none;}
 .search-input{width:100%;padding:10px 13px 10px 36px;background:#fff;border:1.5px solid var(--border);border-radius:7px;font-family:"Inter",sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .15s;}
 .search-input:focus{border-color:var(--ink);}
 .search-input::placeholder{color:rgba(26,26,24,.3);}
 
 /* EMAIL ALERTS */
-.alert-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
-.alert-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:20px;}
+.alert-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;}
+.alert-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px;}
 .alert-card-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:3px;letter-spacing:.02em;}
 .alert-card-sub{font-size:11px;color:rgba(26,26,24,.45);margin-bottom:16px;line-height:1.55;}
 .field-lbl{font-size:11px;font-weight:600;color:rgba(26,26,24,.7);margin-bottom:5px;letter-spacing:.02em;}
@@ -213,7 +213,7 @@ td:first-child{padding-left:18px;}
 .log-msg{color:var(--ink);flex:1;}
 
 /* THRESHOLD */
-.thresh-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border:1.5px solid var(--border);border-radius:9px;margin-bottom:10px;}
+.thresh-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#fff;border:1.5px solid var(--border);border-radius:9px;margin-bottom:7px;}
 .thresh-label{font-size:13px;font-weight:600;color:var(--ink);}
 .thresh-sub{font-size:11px;color:rgba(26,26,24,.45);margin-top:2px;}
 .thresh-ctrl{display:flex;align-items:center;gap:7px;}
@@ -221,8 +221,8 @@ td:first-child{padding-left:18px;}
 .thresh-ctrl span{font-size:11px;color:rgba(26,26,24,.4);}
 
 /* SETUP */
-.setup-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;}
-.setup-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:14px;letter-spacing:.02em;}
+.setup-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;}
+.setup-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:10px;letter-spacing:.02em;}
 .tag-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);}
 .tag-row:last-child{border-bottom:none;}
 .tag-code{font-family:"DM Mono",monospace;font-size:11px;background:#EAE7D8;border-radius:4px;padding:3px 9px;color:var(--ink);min-width:130px;flex-shrink:0;font-weight:500;}
@@ -233,7 +233,7 @@ td:first-child{padding-left:18px;}
 .inline-code{font-family:"DM Mono",monospace;font-size:11px;background:#EAE7D8;padding:1px 5px;border-radius:3px;color:var(--ink);}
 
 /* EMPTY / LOADING */
-.empty-state{padding:40px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
+.empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -525,7 +525,7 @@ td:first-child{padding-left:18px;}
         <div class="send-status" id="sendStatus"></div>
       </div>
 
-      <div class="page-hdr" style="margin-bottom:10px">
+      <div class="page-hdr">
         <div class="page-title" style="font-size:16px">ALERT <em>HISTORY</em></div>
       </div>
       <div class="card"><div id="alertLog"><div class="log-row"><span class="log-time">—</span><span class="log-msg" style="color:rgba(26,26,24,.35)">No alerts sent yet</span></div></div></div>
@@ -611,9 +611,11 @@ async function startLoad(){
       fetch(`${PROXY}?service=shopify&action=products&limit=250`),
       fetch(`${PROXY}?service=shopify&action=orders&days=90&limit=250`)
     ]);
+    if(!pr.ok) throw new Error('Products request failed: '+pr.status);
     const pd=await pr.json(),od=await or.json();
+    if(!pd.products) throw new Error('No products in response');
     processSales(od.orders||[]);
-    processProducts(pd.products||[]);
+    processProducts(pd.products);
     dot.className='dot-g';
     const t=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('syncInfo').textContent='Live · synced '+t;
@@ -623,9 +625,15 @@ async function startLoad(){
   }catch(e){
     dot.className='dot-err';
     document.getElementById('syncInfo').textContent='Connection failed';
-    document.getElementById('mainTable').innerHTML='<div class="empty-state" style="color:var(--red)">Could not reach proxy.<br><small style="color:rgba(26,26,24,.4)">Check SHOPIFY_STORE and SHOPIFY_TOKEN in Vercel env vars.</small></div>';
-    showToast('Connection failed — loading demo data','err');
-    loadDemo();
+    document.getElementById('mainTable').innerHTML=`<div class="empty-state" style="color:var(--red)">
+      Could not reach Shopify.<br>
+      <small style="color:rgba(26,26,24,.45);line-height:1.6;display:block;margin-top:6px">
+        Check that SHOPIFY_STORE, SHOPIFY_TOKEN and RESEND_API_KEY<br>
+        are set correctly in your Vercel environment variables.<br><br>
+        Error: ${e.message}
+      </small>
+    </div>`;
+    showToast('Connection failed','err');
   }
 }
 
