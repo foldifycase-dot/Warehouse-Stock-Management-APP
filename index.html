@@ -929,7 +929,7 @@ td:first-child{padding-left:16px;}
 
 <script>
 const PROXY = 'https://warehouse-stock-management-app.vercel.app/api/proxy';
-let allProducts = [], salesData = {}, salesDataAll = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
+let allProducts = [], salesData = {}, salesDataAll = {}, salesDataVariant = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
 let critT = 5, lowT = 20, emailRecipients = [], alertLog = [];
 
 const WH = {
@@ -1454,18 +1454,31 @@ async function startLoad(){
 }
 
 function processSales(orders){
-  salesData={};salesDataAll=orders;
-  orders.forEach(o=>(o.line_items||[]).forEach(i=>{const id=String(i.product_id);salesData[id]=(salesData[id]||0)+i.quantity;}));
+  salesData={};
+  salesDataVariant={};
+  salesDataAll=orders;
+  orders.forEach(o=>(o.line_items||[]).forEach(i=>{
+    const pid=String(i.product_id);
+    const vid=String(i.variant_id);
+    salesData[pid]=(salesData[pid]||0)+i.quantity;
+    salesDataVariant[vid]=(salesDataVariant[vid]||0)+i.quantity;
+  }));
 }
 
 function salesForPeriod(days){
   const since=Date.now()-days*24*60*60*1000;
   const counts={};
+  const variantCounts={};
   salesDataAll.forEach(o=>{
     const t=new Date(o.created_at).getTime();
-    if(t>=since)(o.line_items||[]).forEach(i=>{const id=String(i.product_id);counts[id]=(counts[id]||0)+i.quantity;});
+    if(t>=since)(o.line_items||[]).forEach(i=>{
+      const pid=String(i.product_id);
+      const vid=String(i.variant_id);
+      counts[pid]=(counts[pid]||0)+i.quantity;
+      variantCounts[vid]=(variantCounts[vid]||0)+i.quantity;
+    });
   });
-  return counts;
+  return{counts,variantCounts};
 }
 
 function setPeriod(days,el){
@@ -1473,8 +1486,12 @@ function setPeriod(days,el){
   document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('popularSub').textContent=`Ranked by units sold — last ${days} days · live from Shopify`;
-  const counts=salesForPeriod(days);
-  const p=filtered().map(x=>({...x,soldN:counts[String(x.id)]||0}));
+  const {counts,variantCounts}=salesForPeriod(days);
+  const p=filtered().map(x=>({
+    ...x,
+    soldN:counts[String(x.id)]||0,
+    variantData:(x.variantData||[]).map(v=>({...v,soldN:variantCounts[String(v.id)]||0}))
+  }));
   renderPopularWithData(p,days);
 }
 
@@ -1490,12 +1507,14 @@ function processProducts(raw){
     const imgById={};
     (p.images||[]).forEach(img=>{if(img.id)imgById[img.id]=img.src;});
     const variantData=v.map(x=>({
+      id:String(x.id),
       title:x.title,
       qty:parseInt(x.inventory_quantity)||0,
       status:status(parseInt(x.inventory_quantity)||0),
       price:parseFloat(x.price||0).toFixed(2),
       tracked:x.inventory_management==='shopify',
-      image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null)
+      image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+      soldN:salesDataVariant[String(x.id)]||0
     }));
     return{
       id:p.id,
@@ -1740,8 +1759,12 @@ function renderReorder(p){
 }
 
 function renderPopular(p){
-  const counts=salesForPeriod(activePeriod);
-  const enriched=p.map(x=>({...x,soldN:counts[String(x.id)]||0}));
+  const {counts,variantCounts}=salesForPeriod(activePeriod);
+  const enriched=p.map(x=>({
+    ...x,
+    soldN:counts[String(x.id)]||0,
+    variantData:(x.variantData||[]).map(v=>({...v,soldN:variantCounts[String(v.id)]||0}))
+  }));
   renderPopularWithData(enriched,activePeriod);
 }
 
@@ -1769,10 +1792,18 @@ function renderPopularWithData(p,days){
     const varRows=hasVars?`<tbody class="variant-rows" id="vr-pop-${i}">${x.variantData.map(v=>{
       const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
       const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:'<div class="var-img-ph"></div>';
+      const vSold=v.soldN||0;
+      const vMx=Math.max(...(x.variantData||[]).map(vv=>vv.soldN||0),1);
       return`<tr class="variant-row">
         <td></td>
-        <td style="padding-left:58px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
-        <td></td><td></td>
+        <td style="padding-left:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${vImg}
+            <span class="variant-name">${v.title}</span>
+          </div>
+        </td>
+        <td><span class="sales-chip" style="${vSold>0?'background:rgba(45,95,166,.1);color:#2D5FA6':''}">${vSold}</span></td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill fill-sales" style="width:${Math.round((vSold/vMx)*100)}%"></div></div></div></td>
         <td><span class="variant-qty">${v.qty}</span></td>
         <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
         <td></td><td></td>
