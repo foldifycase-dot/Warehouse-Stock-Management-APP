@@ -937,6 +937,8 @@ td:first-child{padding-left:16px;}
 const PROXY = 'https://warehouse-stock-management-app.vercel.app/api/proxy';
 let allProducts = [], salesData = {}, salesDataAll = {}, salesDataVariant = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
 let critT = 5, lowT = 20, emailRecipients = [], alertLog = [];
+let locationMap = {};
+let inventoryByVariant = {}; // variant_id -> { us: qty, uk: qty, au: qty }
 
 const WH = {
   us:{label:'US Warehouse',short:'US',color:'#3B4F8C'},
@@ -1535,13 +1537,35 @@ async function startLoad(){
   document.getElementById('syncInfo').textContent='Syncing…';
   document.getElementById('mainTable').innerHTML='<div class="empty-state"><div class="spinner"></div>Fetching products from Shopify…</div>';
   try{
-    const [pr,or]=await Promise.all([
+    // Fetch products, orders, and locations in parallel
+    const [pr,or,lr]=await Promise.all([
       fetch(`${PROXY}?service=shopify&action=products&limit=250`),
-      fetch(`${PROXY}?service=shopify&action=orders&days=90&limit=250`)
+      fetch(`${PROXY}?service=shopify&action=orders&days=90&limit=250`),
+      fetch(`${PROXY}?service=shopify&action=locations`)
     ]);
     if(!pr.ok) throw new Error('Products request failed: '+pr.status);
-    const pd=await pr.json(),od=await or.json();
+    const pd=await pr.json(),od=await or.json(),ld=await lr.json();
     if(!pd.products) throw new Error('No products in response');
+
+    // Build location ID map — match names containing us/uk/au keywords
+    const locations=ld.locations||[];
+    locationMap={};
+    locations.forEach(loc=>{
+      const n=loc.name.toLowerCase();
+      if(n.includes('us')||n.includes('united states')||n.includes('america'))locationMap.us=loc.id;
+      if(n.includes('uk')||n.includes('united kingdom')||n.includes('britain'))locationMap.uk=loc.id;
+      if(n.includes('au')||n.includes('australia'))locationMap.au=loc.id;
+    });
+    console.log('[Locations]',locations.map(l=>l.name+':'+l.id),locationMap);
+
+    // Fetch inventory levels for all locations if we have location IDs
+    const locIds=Object.values(locationMap);
+    if(locIds.length>0){
+      const invRes=await fetch(`${PROXY}?service=shopify&action=inventory_levels&location_ids=${locIds.join(',')}`);
+      const invData=await invRes.json();
+      processInventoryLevels(invData.inventory_levels||[]);
+    }
+
     processSales(od.orders||[]);
     processProducts(pd.products);
     dot.className='dot-g';
@@ -1564,6 +1588,38 @@ async function startLoad(){
     </div>`;
     showToast('Connection failed','err');
   }
+}
+
+
+function processInventoryLevels(levels){
+  inventoryByVariant={};
+  // Invert locationMap for lookup: location_id -> warehouse code
+  const locIdToCode={};
+  Object.entries(locationMap).forEach(([code,id])=>locIdToCode[String(id)]=code);
+
+  levels.forEach(lv=>{
+    const vid=String(lv.inventory_item_id); // Note: this is inventory_item_id not variant_id
+    // We'll use location_id to get warehouse code
+    const code=locIdToCode[String(lv.location_id)];
+    if(!code)return;
+    if(!inventoryByVariant[vid])inventoryByVariant[vid]={};
+    // available can be null = "Not stocked" — only set if it's a real number
+    if(lv.available!==null&&lv.available!==undefined){
+      inventoryByVariant[vid][code]=parseInt(lv.available)||0;
+    }
+    // Also track if stocked (even if 0) vs not stocked (null)
+    if(!inventoryByVariant[vid]._stocked)inventoryByVariant[vid]._stocked=[];
+    if(lv.available!==null)inventoryByVariant[vid]._stocked.push(code);
+  });
+}
+
+// Look up inventory for a variant at a specific warehouse
+// Returns qty if stocked there, or null if "Not stocked"
+function variantQtyAtLocation(inventoryItemId, whCode){
+  const rec=inventoryByVariant[String(inventoryItemId)];
+  if(!rec)return null;
+  if(!(rec._stocked||[]).includes(whCode))return null; // Not stocked
+  return rec[whCode]!==undefined?rec[whCode]:0;
 }
 
 function processSales(orders){
@@ -1609,39 +1665,127 @@ function setPeriod(days,el){
 }
 
 function processProducts(raw){
-  const noTags=raw.every(p=>!(p.tags||'').includes('warehouse:'));
+  const hasLocationData=Object.keys(inventoryByVariant).length>0;
+  const hasLocationMap=Object.keys(locationMap).length>0;
+
   allProducts=raw.filter(p=>!isDS(p.tags)).map(p=>{
     const v=p.variants||[];
-    const tracked=v.filter(x=>x.inventory_management==='shopify');
-    const qty=tracked.reduce((s,x)=>s+(parseInt(x.inventory_quantity)||0),0);
-    let wh=parseWH(p.tags);
-    if(noTags&&qty>0)wh=['us','uk','au'];
-    if(!wh.length)return null;
     const imgById={};
     (p.images||[]).forEach(img=>{if(img.id)imgById[img.id]=img.src;});
-    const variantData=v.map(x=>({
-      id:String(x.id),
-      title:x.title,
-      qty:parseInt(x.inventory_quantity)||0,
-      status:status(parseInt(x.inventory_quantity)||0),
-      price:parseFloat(x.price||0).toFixed(2),
-      tracked:x.inventory_management==='shopify',
-      image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-      soldN:salesDataVariant[String(x.id)]||0
-    }));
-    return{
-      id:p.id,
-      title:p.title,
-      handle:p.handle||'',
-      image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
-      qty,
-      variants:v.length,
-      variantData,
-      status:status(qty),
-      sold90:salesData[String(p.id)]||0,
-      price:parseFloat(v[0]?.price||0).toFixed(2),
-      warehouses:wh
-    };
+
+    if(hasLocationData&&hasLocationMap){
+      // ── LOCATION-BASED MODE ──────────────────────────────────────────────
+      // For each variant, check which warehouses it is stocked at (not null)
+      // Build per-warehouse variant lists and quantities
+
+      const warehouseCodes=Object.keys(locationMap); // ['us','uk','au']
+
+      // Per-warehouse: which variants are stocked, and total qty
+      const whVariants={}; // { us: [{...variant}], uk: [...], au: [...] }
+      const whQty={};      // { us: totalQty, uk: totalQty, au: totalQty }
+      warehouseCodes.forEach(wh=>{whVariants[wh]=[];whQty[wh]=0;});
+
+      const variantData=v.map(x=>{
+        const iid=String(x.inventory_item_id||x.id);
+        const locData=inventoryByVariant[iid]||{};
+        const varWarehouses=[];
+
+        warehouseCodes.forEach(wh=>{
+          const stocked=(locData._stocked||[]).includes(wh);
+          if(stocked){
+            const q=locData[wh]!==undefined?locData[wh]:0;
+            varWarehouses.push(wh);
+            whVariants[wh].push({
+              id:String(x.id),
+              inventoryItemId:iid,
+              title:x.title,
+              qty:q,
+              status:status(q),
+              price:parseFloat(x.price||0).toFixed(2),
+              tracked:x.inventory_management==='shopify',
+              image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+              soldN:salesDataVariant[String(x.id)]||0,
+              warehouses:varWarehouses
+            });
+            whQty[wh]+=q;
+          }
+        });
+
+        // If no location data for this variant's inventory item, fall back to flat qty
+        const fallbackQty=parseInt(x.inventory_quantity)||0;
+        const hasLocInfo=(locData._stocked||[]).length>0;
+
+        return{
+          id:String(x.id),
+          inventoryItemId:iid,
+          title:x.title,
+          qty:hasLocInfo?warehouseCodes.reduce((s,wh)=>(locData._stocked||[]).includes(wh)?s+(locData[wh]||0):s,0):fallbackQty,
+          status:status(hasLocInfo?warehouseCodes.reduce((s,wh)=>(locData._stocked||[]).includes(wh)?s+(locData[wh]||0):s,0):fallbackQty),
+          price:parseFloat(x.price||0).toFixed(2),
+          tracked:x.inventory_management==='shopify',
+          image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+          soldN:salesDataVariant[String(x.id)]||0,
+          warehouses:varWarehouses
+        };
+      });
+
+      // Product is shown per-warehouse based on which warehouses have stocked variants
+      // A product appears in a warehouse if at least one variant is stocked there
+      const productWarehouses=warehouseCodes.filter(wh=>whVariants[wh].length>0);
+
+      if(!productWarehouses.length&&!isDS(p.tags))return null;
+
+      // Total qty across all warehouses for this product
+      const totalQty=warehouseCodes.reduce((s,wh)=>s+whQty[wh],0);
+
+      return{
+        id:p.id,
+        title:p.title,
+        handle:p.handle||'',
+        image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
+        qty:totalQty,
+        variants:v.length,
+        variantData,
+        whVariants,  // per-warehouse variant breakdown
+        whQty,       // per-warehouse total qty
+        status:status(totalQty),
+        sold90:salesData[String(p.id)]||0,
+        price:parseFloat(v[0]?.price||0).toFixed(2),
+        warehouses:productWarehouses
+      };
+    } else {
+      // ── FALLBACK: TAG-BASED MODE (no location data) ──────────────────────
+      const tracked=v.filter(x=>x.inventory_management==='shopify');
+      const qty=tracked.reduce((s,x)=>s+(parseInt(x.inventory_quantity)||0),0);
+      const noTags=raw.every(p=>!(p.tags||'').includes('warehouse:'));
+      let wh=parseWH(p.tags);
+      if(noTags&&qty>0)wh=['us','uk','au'];
+      if(!wh.length)return null;
+      const variantData=v.map(x=>({
+        id:String(x.id),
+        title:x.title,
+        qty:parseInt(x.inventory_quantity)||0,
+        status:status(parseInt(x.inventory_quantity)||0),
+        price:parseFloat(x.price||0).toFixed(2),
+        tracked:x.inventory_management==='shopify',
+        image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+        soldN:salesDataVariant[String(x.id)]||0,
+        warehouses:wh
+      }));
+      return{
+        id:p.id,
+        title:p.title,
+        handle:p.handle||'',
+        image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
+        qty,
+        variants:v.length,
+        variantData,
+        status:status(qty),
+        sold90:salesData[String(p.id)]||0,
+        price:parseFloat(v[0]?.price||0).toFixed(2),
+        warehouses:wh
+      };
+    }
   }).filter(Boolean);
 }
 
