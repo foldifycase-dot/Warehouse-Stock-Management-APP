@@ -933,7 +933,290 @@ td:first-child{padding-left:16px;}
   </div>
 </div>
 
+<div class="toast" id="toast"><span id="tMsg"></span></div>
+
+<!-- RESTOCK MODAL -->
+<div class="modal-overlay" id="restockModal">
+  <div class="modal" style="width:620px;max-width:96vw">
+    <div class="modal-hdr">
+      <div class="modal-title">Create Restock Order</div>
+      <button class="modal-close" onclick="closeRestock()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- ORDER LINES -->
+      <div class="modal-section">
+        <div class="modal-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          Order lines
+          <span id="lineCountBadge" style="font-size:10px;background:#EAE7D8;padding:1px 7px;border-radius:10px;font-weight:400;color:rgba(26,26,24,.5)">0 items</span>
+        </div>
+        <div class="order-lines" id="orderLines" style="display:none"></div>
+        <button class="add-line-btn" id="addLineBtn" onclick="showAddLine()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          Add product
+        </button>
+      </div>
+
+      <!-- ADD PRODUCT PANEL -->
+      <div id="addLinePanel" style="display:none">
+        <div class="modal-section">
+          <div class="modal-label">Search product</div>
+          <div id="selectedProductWrap" style="display:none"></div>
+          <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
+          <div class="modal-dropdown" id="productDropdown"></div>
+        </div>
+        <div class="modal-section" id="variantSection" style="display:none">
+          <div class="modal-label">Select variant</div>
+          <div class="variant-select-grid" id="variantGrid"></div>
+        </div>
+        <div class="modal-section" id="qtySection" style="display:none">
+          <div class="modal-label">Quantity</div>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adjQty(-10)">−</button>
+            <input type="number" class="qty-input" id="restockQty" value="50" min="1">
+            <button class="qty-btn" onclick="adjQty(10)">+</button>
+            <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+          </div>
+        </div>
+        <div class="modal-section" id="addLineBtnRow" style="display:none">
+          <div style="display:flex;gap:8px">
+            <button class="btn-sol gold" onclick="addLineToOrder()" style="flex:1">Add to order</button>
+            <button class="btn-out" onclick="cancelAddLine()" style="flex:1">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider" id="orderDivider" style="display:none"></div>
+
+      <!-- ORDER SETTINGS -->
+      <div id="orderSettings" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Shipping method</div>
+            <div class="ship-toggle">
+              <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
+                <div class="ship-opt-label">✈ By Air</div>
+                <div class="ship-opt-eta air" id="modalAirEta">—</div>
+              </div>
+              <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
+                <div class="ship-opt-label">⛵ By Sea</div>
+                <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Order date</div>
+            <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="margin-bottom:10px">
+            <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
+            <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality…">
+          </div>
+        </div>
+        <div class="supplier-section">
+          <div class="supplier-title">Send to supplier</div>
+          <input type="email" class="supplier-input" id="supplierEmail" placeholder="supplier@company.com">
+          <input type="text" class="supplier-input" id="supplierName" placeholder="Supplier / company name (optional)">
+          <div class="supplier-hint">A branded purchase order email will be sent to your supplier when you confirm.</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-out" onclick="closeRestock()">Cancel</button>
+      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tMsg"></span></div>
+
+<!-- RESTOCK MODAL -->
+<div class="modal-overlay" id="restockModal">
+  <div class="modal" style="width:620px;max-width:96vw">
+    <div class="modal-hdr">
+      <div class="modal-title">Create Restock Order</div>
+      <button class="modal-close" onclick="closeRestock()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- ORDER LINES -->
+      <div class="modal-section">
+        <div class="modal-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          Order lines
+          <span id="lineCountBadge" style="font-size:10px;background:#EAE7D8;padding:1px 7px;border-radius:10px;font-weight:400;color:rgba(26,26,24,.5)">0 items</span>
+        </div>
+        <div class="order-lines" id="orderLines" style="display:none"></div>
+        <button class="add-line-btn" id="addLineBtn" onclick="showAddLine()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          Add product
+        </button>
+      </div>
+
+      <!-- ADD PRODUCT PANEL -->
+      <div id="addLinePanel" style="display:none">
+        <div class="modal-section">
+          <div class="modal-label">Search product</div>
+          <div id="selectedProductWrap" style="display:none"></div>
+          <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
+          <div class="modal-dropdown" id="productDropdown"></div>
+        </div>
+        <div class="modal-section" id="variantSection" style="display:none">
+          <div class="modal-label">Select variant</div>
+          <div class="variant-select-grid" id="variantGrid"></div>
+        </div>
+        <div class="modal-section" id="qtySection" style="display:none">
+          <div class="modal-label">Quantity</div>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adjQty(-10)">−</button>
+            <input type="number" class="qty-input" id="restockQty" value="50" min="1">
+            <button class="qty-btn" onclick="adjQty(10)">+</button>
+            <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+          </div>
+        </div>
+        <div class="modal-section" id="addLineBtnRow" style="display:none">
+          <div style="display:flex;gap:8px">
+            <button class="btn-sol gold" onclick="addLineToOrder()" style="flex:1">Add to order</button>
+            <button class="btn-out" onclick="cancelAddLine()" style="flex:1">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider" id="orderDivider" style="display:none"></div>
+
+      <!-- ORDER SETTINGS -->
+      <div id="orderSettings" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Shipping method</div>
+            <div class="ship-toggle">
+              <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
+                <div class="ship-opt-label">✈ By Air</div>
+                <div class="ship-opt-eta air" id="modalAirEta">—</div>
+              </div>
+              <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
+                <div class="ship-opt-label">⛵ By Sea</div>
+                <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Order date</div>
+            <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="margin-bottom:10px">
+            <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
+            <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality…">
+          </div>
+        </div>
+        <div class="supplier-section">
+          <div class="supplier-title">Send to supplier</div>
+          <input type="email" class="supplier-input" id="supplierEmail" placeholder="supplier@company.com">
+          <input type="text" class="supplier-input" id="supplierName" placeholder="Supplier / company name (optional)">
+          <div class="supplier-hint">A branded purchase order email will be sent to your supplier when you confirm.</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-out" onclick="closeRestock()">Cancel</button>
+      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tMsg"></span></div>
+
+<!-- RESTOCK MODAL -->
+<div class="modal-overlay" id="restockModal">
+  <div class="modal" style="width:620px;max-width:96vw">
+    <div class="modal-hdr">
+      <div class="modal-title">Create Restock Order</div>
+      <button class="modal-close" onclick="closeRestock()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- ORDER LINES -->
+      <div class="modal-section">
+        <div class="modal-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          Order lines
+          <span id="lineCountBadge" style="font-size:10px;background:#EAE7D8;padding:1px 7px;border-radius:10px;font-weight:400;color:rgba(26,26,24,.5)">0 items</span>
+        </div>
+        <div class="order-lines" id="orderLines" style="display:none"></div>
+        <button class="add-line-btn" id="addLineBtn" onclick="showAddLine()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          Add product
+        </button>
+      </div>
+
+      <!-- ADD PRODUCT PANEL -->
+      <div id="addLinePanel" style="display:none">
+        <div class="modal-section">
+          <div class="modal-label">Search product</div>
+          <div id="selectedProductWrap" style="display:none"></div>
+          <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
+          <div class="modal-dropdown" id="productDropdown"></div>
+        </div>
+        <div class="modal-section" id="variantSection" style="display:none">
+          <div class="modal-label">Select variant</div>
+          <div class="variant-select-grid" id="variantGrid"></div>
+        </div>
+        <div class="modal-section" id="qtySection" style="display:none">
+          <div class="modal-label">Quantity</div>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adjQty(-10)">−</button>
+            <input type="number" class="qty-input" id="restockQty" value="50" min="1">
+            <button class="qty-btn" onclick="adjQty(10)">+</button>
+            <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+          </div>
+        </div>
+        <div class="modal-section" id="addLineBtnRow" style="display:none">
+          <div style="display:flex;gap:8px">
+            <button class="btn-sol gold" onclick="addLineToOrder()" style="flex:1">Add to order</button>
+            <button class="btn-out" onclick="cancelAddLine()" style="flex:1">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider" id="orderDivider" style="display:none"></div>
+
+      <!-- ORDER SETTINGS -->
+      <div id="orderSettings" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Shipping method</div>
+            <div class="ship-toggle">
+              <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
+                <div class="ship-opt-label">✈ By Air</div>
+                <div class="ship-opt-eta air" id="modalAirEta">—</div>
+              </div>
+              <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
+                <div class="ship-opt-label">⛵ By Sea</div>
+                <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-section" style="margin-bottom:0">
+            <div class="modal-label">Order date</div>
+            <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="margin-bottom:10px">
+            <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
+            <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality…">
+          </div>
+        </div>
+        <div class="supplier-section">
+          <div class="supplier-title">Send to supplier</div>
+          <input type="email" class="supplier-input" id="supplierEmail" placeholder="supplier@company.com">
+          <input type="text" class="supplier-input" id="supplierName" placeholder="Supplier / company name (optional)">
+          <div class="supplier-hint">A branded purchase order email will be sent to your supplier when you confirm.</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-out" onclick="closeRestock()">Cancel</button>
+      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Place Order</button>
+    </div>
+  </div>
+</div>
+
 <script>
+
 const PROXY = 'https://warehouse-stock-management-app.vercel.app/api/proxy';
 let allProducts = [], salesData = {}, salesDataAll = {}, salesDataVariant = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
 let critT = 5, lowT = 20, emailRecipients = [], alertLog = [];
@@ -1674,15 +1957,9 @@ function processProducts(raw){
     (p.images||[]).forEach(img=>{if(img.id)imgById[img.id]=img.src;});
 
     if(hasLocationData&&hasLocationMap){
-      // ── LOCATION-BASED MODE ──────────────────────────────────────────────
-      // For each variant, check which warehouses it is stocked at (not null)
-      // Build per-warehouse variant lists and quantities
-
-      const warehouseCodes=Object.keys(locationMap); // ['us','uk','au']
-
-      // Per-warehouse: which variants are stocked, and total qty
-      const whVariants={}; // { us: [{...variant}], uk: [...], au: [...] }
-      const whQty={};      // { us: totalQty, uk: totalQty, au: totalQty }
+      const warehouseCodes=Object.keys(locationMap);
+      const whVariants={};
+      const whQty={};
       warehouseCodes.forEach(wh=>{whVariants[wh]=[];whQty[wh]=0;});
 
       const variantData=v.map(x=>{
@@ -1694,67 +1971,49 @@ function processProducts(raw){
           const stocked=(locData._stocked||[]).includes(wh);
           if(stocked){
             const q=locData[wh]!==undefined?locData[wh]:0;
-            varWarehouses.push(wh);
-            whVariants[wh].push({
-              id:String(x.id),
-              inventoryItemId:iid,
-              title:x.title,
-              qty:q,
-              status:status(q),
-              price:parseFloat(x.price||0).toFixed(2),
-              tracked:x.inventory_management==='shopify',
-              image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-              soldN:salesDataVariant[String(x.id)]||0,
-              warehouses:varWarehouses
-            });
-            whQty[wh]+=q;
+            if(q>0){
+              varWarehouses.push(wh);
+              whVariants[wh].push({
+                id:String(x.id),inventoryItemId:iid,title:x.title,
+                qty:q,status:status(q),price:parseFloat(x.price||0).toFixed(2),
+                tracked:x.inventory_management==='shopify',
+                image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+                soldN:salesDataVariant[String(x.id)]||0,warehouses:[wh]
+              });
+              whQty[wh]+=q;
+            }
           }
         });
 
-        // If no location data for this variant's inventory item, fall back to flat qty
-        const fallbackQty=parseInt(x.inventory_quantity)||0;
         const hasLocInfo=(locData._stocked||[]).length>0;
+        const totalLocQty=varWarehouses.reduce((s,wh)=>s+(locData[wh]||0),0);
+        if(hasLocInfo&&varWarehouses.length===0)return null;
 
         return{
-          id:String(x.id),
-          inventoryItemId:iid,
-          title:x.title,
-          qty:hasLocInfo?warehouseCodes.reduce((s,wh)=>(locData._stocked||[]).includes(wh)?s+(locData[wh]||0):s,0):fallbackQty,
-          status:status(hasLocInfo?warehouseCodes.reduce((s,wh)=>(locData._stocked||[]).includes(wh)?s+(locData[wh]||0):s,0):fallbackQty),
+          id:String(x.id),inventoryItemId:iid,title:x.title,
+          qty:hasLocInfo?totalLocQty:(parseInt(x.inventory_quantity)||0),
+          status:status(hasLocInfo?totalLocQty:(parseInt(x.inventory_quantity)||0)),
           price:parseFloat(x.price||0).toFixed(2),
           tracked:x.inventory_management==='shopify',
           image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
           soldN:salesDataVariant[String(x.id)]||0,
           warehouses:varWarehouses
         };
-      });
+      }).filter(Boolean);
 
-      // Product is shown per-warehouse based on which warehouses have stocked variants
-      // A product appears in a warehouse if at least one variant is stocked there
       const productWarehouses=warehouseCodes.filter(wh=>whVariants[wh].length>0);
-
-      if(!productWarehouses.length&&!isDS(p.tags))return null;
-
-      // Total qty across all warehouses for this product
+      if(!productWarehouses.length)return null;
       const totalQty=warehouseCodes.reduce((s,wh)=>s+whQty[wh],0);
 
       return{
-        id:p.id,
-        title:p.title,
-        handle:p.handle||'',
+        id:p.id,title:p.title,handle:p.handle||'',
         image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
-        qty:totalQty,
-        variants:v.length,
-        variantData,
-        whVariants,  // per-warehouse variant breakdown
-        whQty,       // per-warehouse total qty
-        status:status(totalQty),
-        sold90:salesData[String(p.id)]||0,
+        qty:totalQty,variants:v.length,variantData,whVariants,whQty,
+        status:status(totalQty),sold90:salesData[String(p.id)]||0,
         price:parseFloat(v[0]?.price||0).toFixed(2),
         warehouses:productWarehouses
       };
     } else {
-      // ── FALLBACK: TAG-BASED MODE (no location data) ──────────────────────
       const tracked=v.filter(x=>x.inventory_management==='shopify');
       const qty=tracked.reduce((s,x)=>s+(parseInt(x.inventory_quantity)||0),0);
       const noTags=raw.every(p=>!(p.tags||'').includes('warehouse:'));
@@ -1762,28 +2021,20 @@ function processProducts(raw){
       if(noTags&&qty>0)wh=['us','uk','au'];
       if(!wh.length)return null;
       const variantData=v.map(x=>({
-        id:String(x.id),
-        title:x.title,
+        id:String(x.id),title:x.title,
         qty:parseInt(x.inventory_quantity)||0,
         status:status(parseInt(x.inventory_quantity)||0),
         price:parseFloat(x.price||0).toFixed(2),
         tracked:x.inventory_management==='shopify',
         image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-        soldN:salesDataVariant[String(x.id)]||0,
-        warehouses:wh
+        soldN:salesDataVariant[String(x.id)]||0,warehouses:wh
       }));
       return{
-        id:p.id,
-        title:p.title,
-        handle:p.handle||'',
+        id:p.id,title:p.title,handle:p.handle||'',
         image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
-        qty,
-        variants:v.length,
-        variantData,
-        status:status(qty),
+        qty,variants:v.length,variantData,status:status(qty),
         sold90:salesData[String(p.id)]||0,
-        price:parseFloat(v[0]?.price||0).toFixed(2),
-        warehouses:wh
+        price:parseFloat(v[0]?.price||0).toFixed(2),warehouses:wh
       };
     }
   }).filter(Boolean);
@@ -2237,6 +2488,7 @@ function showToast(msg,type){
 }
 
 startLoad();
+
 </script>
 </body>
 </html>
