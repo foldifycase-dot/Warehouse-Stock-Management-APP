@@ -1198,39 +1198,126 @@ async function confirmRestock(){
 }
 
 async function sendToSupplier(order){
-  const emailBody=`<!DOCTYPE html><html><body>
-    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-      <div style="background:#1A1A18;padding:20px 24px;border-bottom:3px solid #C8A96E">
-        <div style="color:#fff;font-size:16px;font-weight:700;letter-spacing:.05em">FOLDIFYCASE</div>
-        <div style="color:#C8A96E;font-size:11px;letter-spacing:.15em;text-transform:uppercase">Purchase Order ${order.id}</div>
-      </div>
-      <div style="padding:24px;background:#F5F3E9">
-        <p style="font-size:13px;color:#444;margin-bottom:16px">Dear ${order.supplierName||'Supplier'},</p>
-        <p style="font-size:13px;color:#444;margin-bottom:20px">Please find our purchase order details below.</p>
-        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:20px">
-          <thead><tr style="background:#EAE7D8">
-            <th style="padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Product</th>
-            <th style="padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Variant</th>
-            <th style="padding:10px 14px;text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Qty</th>
-          </tr></thead>
-          <tbody>${order.lines.map(l=>`<tr style="border-top:1px solid #eee">
-            <td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18">${l.product}</td>
-            <td style="padding:10px 14px;font-size:12px;color:#555">${l.variant}</td>
-            <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#1A1A18;text-align:center">${l.qty}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:20px">
-          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Order reference</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.id}</td></tr>
-          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Order date</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.orderDate}</td></tr>
-          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Shipping method</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.ship==='air'?'By Air (Express)':'By Sea (Standard)'}</td></tr>
-          <tr><td style="padding:10px 14px;font-size:12px;color:#888">Expected arrival</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:${order.ship==='air'?'#2D5FA6':'#3D7A5A'}">${order.eta}</td></tr>
-          ${order.notes?`<tr><td style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid #eee">Notes</td><td style="padding:10px 14px;font-size:12px;color:#555;border-top:1px solid #eee">${order.notes}</td></tr>`:''}
-        </table>
-        <p style="font-size:12px;color:#888">Please confirm receipt of this order. Thank you.</p>
-        <p style="font-size:12px;color:#888;margin-top:8px">— FoldifyCase Warehouse Team</p>
-      </div>
-    </div>
-  </body></html>`;
+  const shipColor=order.ship==='air'?'#2D5FA6':'#3D7A5A';
+  const shipLabel=order.ship==='air'?'✈ By Air — Express':'⛵ By Sea — Standard';
+  const totalQty=order.lines.reduce((s,l)=>s+l.qty,0);
+
+  // Product rows — image + item name + variant + qty (mirrors the packing slip design)
+  const productRows=order.lines.map(l=>`
+    <tr>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle;width:80px">
+        ${l.image
+          ? `<img src="${l.image}" width="60" height="60" style="border-radius:6px;object-fit:cover;border:1px solid #E0DDD4;display:block">`
+          : `<div style="width:60px;height:60px;border-radius:6px;background:#EAE7D8;border:1px solid #E0DDD4"></div>`
+        }
+      </td>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle">
+        <div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:3px">${l.product}</div>
+        <div style="font-size:11px;color:#888;letter-spacing:.02em">${l.variant}</div>
+      </td>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle;text-align:right;width:60px">
+        <span style="font-size:18px;font-weight:700;color:#1A1A18">${l.qty}</span>
+      </td>
+    </tr>`).join('');
+
+  const emailBody=`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#E8E5DB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#E8E5DB;padding:32px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+  <!-- HEADER -->
+  <tr><td style="background:#1A1A18;border-radius:12px 12px 0 0;padding:24px 32px;border-bottom:3px solid #C8A96E">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td>
+        <div style="color:#FFFFFF;font-size:22px;font-weight:800;letter-spacing:.08em;font-family:Arial,sans-serif">FOLDIFYCASE</div>
+        <div style="color:#C8A96E;font-size:10px;letter-spacing:.22em;text-transform:uppercase;margin-top:4px">PURCHASE ORDER &mdash; ${order.id}</div>
+      </td>
+      <td align="right">
+        <div style="color:#C8A96E;font-size:20px;font-weight:700;font-family:'Courier New',monospace">${order.id}</div>
+        <div style="color:rgba(255,255,255,.4);font-size:10px;margin-top:2px">${order.orderDate}</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- ACTION BANNER — replaces "New order ready to ship" -->
+  <tr><td style="background:#EAF3DE;border:1px solid #C5DFA8;padding:16px 32px">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:18px;padding-right:10px">📦</td>
+      <td>
+        <div style="font-size:13px;font-weight:700;color:#2A5C0A">New restock order from FoldifyCase</div>
+        <div style="font-size:12px;color:#3D7A2A;margin-top:2px">Please review the stock list below and confirm availability.</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- ORDER DETAILS — replaces "Print Label / View Packing Slip" -->
+  <tr><td style="background:#fff;padding:0">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="50%" style="padding:20px 24px 20px 32px;border-right:1px solid #EDEAE0;vertical-align:top">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:8px">Order details</div>
+          <table cellpadding="0" cellspacing="0">
+            <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px;white-space:nowrap">Order ref</td><td style="font-size:11px;font-weight:700;color:#1A1A18;font-family:'Courier New',monospace">${order.id}</td></tr>
+            <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px">Order date</td><td style="font-size:11px;font-weight:600;color:#1A1A18">${order.orderDate}</td></tr>
+            <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px">Total units</td><td style="font-size:11px;font-weight:700;color:#1A1A18">${totalQty} units across ${order.lines.length} SKU${order.lines.length!==1?'s':''}</td></tr>
+            ${order.notes?`<tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px;vertical-align:top">Notes</td><td style="font-size:11px;color:#555">${order.notes}</td></tr>`:''}
+          </table>
+        </td>
+        <td width="50%" style="padding:20px 32px 20px 24px;vertical-align:top">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:8px">Shipping</div>
+          <div style="font-size:13px;font-weight:700;color:#1A1A18;margin-bottom:4px">${shipLabel}</div>
+          <div style="font-size:11px;color:#888;margin-bottom:10px">Expected arrival at FoldifyCase warehouse</div>
+          <div style="display:inline-block;background:${shipColor};color:#fff;font-size:13px;font-weight:700;padding:8px 16px;border-radius:6px;letter-spacing:.02em">${order.eta}</div>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- STOCK LIST TABLE — mirrors packing slip IMAGE / ITEM / QTY -->
+  <tr><td style="background:#F5F3E9;padding:0">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr style="background:#EDEAE0">
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#888;text-align:left;font-weight:600;width:80px">Image</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#888;text-align:left;font-weight:600">Item</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#888;text-align:right;font-weight:600;width:60px">Qty</th>
+        </tr>
+      </thead>
+      <tbody style="background:#fff">
+        ${productRows}
+        <!-- TOTAL ROW -->
+        <tr style="background:#F5F3E9">
+          <td colspan="2" style="padding:12px 16px;font-size:12px;font-weight:600;color:#888;text-align:right;border-top:2px solid #EDEAE0">Total units ordered</td>
+          <td style="padding:12px 16px;font-size:16px;font-weight:800;color:#1A1A18;text-align:right;border-top:2px solid #EDEAE0">${totalQty}</td>
+        </tr>
+      </tbody>
+    </table>
+  </td></tr>
+
+  <!-- CONFIRM ACTION BANNER — replaces "Upload Packing Image" -->
+  <tr><td style="background:#F5F3E9;padding:24px 32px;text-align:center;border-top:1px solid #EDEAE0">
+    <div style="font-size:13px;color:#555;margin-bottom:14px">📬 Please confirm you have received this order and can fulfil the quantities listed above.</div>
+    <a href="mailto:${document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au'}?subject=RE: Purchase Order ${order.id} — Confirmed&body=Hi FoldifyCase team,%0A%0AI confirm receipt of Purchase Order ${order.id} and can fulfil all listed quantities.%0A%0AExpected dispatch: %0A%0ARegards," 
+       style="display:inline-block;background:#1A1A18;color:#C8A96E;font-size:13px;font-weight:700;letter-spacing:.06em;padding:14px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif">
+      ✅ &nbsp;CONFIRM THIS ORDER
+    </a>
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="background:#1A1A18;border-radius:0 0 12px 12px;padding:16px 32px">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:10px;color:rgba(255,255,255,.35)">FoldifyCase Warehouse · foldifycase.com.au</td>
+      <td align="right" style="font-size:10px;color:rgba(200,169,110,.6)">PO ${order.id}</td>
+    </tr></table>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`;
 
   try{
     const fromEmail=document.getElementById('fromEmail')?.value||'alerts@foldifycase.com';
