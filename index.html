@@ -1888,7 +1888,7 @@ function processInventoryLevels(levels){
     if(!inventoryByVariant[vid])inventoryByVariant[vid]={};
     // available can be null = "Not stocked" — only set if it's a real number
     if(lv.available!==null&&lv.available!==undefined){
-      inventoryByVariant[vid][code]=parseInt(lv.available)||0;
+      inventoryByVariant[vid][code]=parseInt(lv.available);// store exact: 0, negative, positive
     }
     // Also track if stocked (even if 0) vs not stocked (null)
     if(!inventoryByVariant[vid]._stocked)inventoryByVariant[vid]._stocked=[];
@@ -1970,28 +1970,29 @@ function processProducts(raw){
         warehouseCodes.forEach(wh=>{
           const stocked=(locData._stocked||[]).includes(wh);
           if(stocked){
+            // Include regardless of quantity — only "Not stocked" (null) is excluded
             const q=locData[wh]!==undefined?locData[wh]:0;
-            if(q>0){
-              varWarehouses.push(wh);
-              whVariants[wh].push({
-                id:String(x.id),inventoryItemId:iid,title:x.title,
-                qty:q,status:status(q),price:parseFloat(x.price||0).toFixed(2),
-                tracked:x.inventory_management==='shopify',
-                image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-                soldN:salesDataVariant[String(x.id)]||0,warehouses:[wh]
-              });
-              whQty[wh]+=q;
-            }
+            varWarehouses.push(wh);
+            whVariants[wh].push({
+              id:String(x.id),inventoryItemId:iid,title:x.title,
+              qty:q,status:status(q),price:parseFloat(x.price||0).toFixed(2),
+              tracked:x.inventory_management==='shopify',
+              image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
+              soldN:salesDataVariant[String(x.id)]||0,warehouses:[wh]
+            });
+            whQty[wh]+=q;
           }
         });
 
         const hasLocInfo=(locData._stocked||[]).length>0;
         const totalLocQty=varWarehouses.reduce((s,wh)=>s+(locData[wh]||0),0);
+        // Only exclude if we have location data AND variant is not stocked anywhere locally
         if(hasLocInfo&&varWarehouses.length===0)return null;
+        const fallbackQty=parseInt(x.inventory_quantity)||0;
 
         return{
           id:String(x.id),inventoryItemId:iid,title:x.title,
-          qty:hasLocInfo?totalLocQty:(parseInt(x.inventory_quantity)||0),
+          qty:hasLocInfo?totalLocQty:fallbackQty,
           status:status(hasLocInfo?totalLocQty:(parseInt(x.inventory_quantity)||0)),
           price:parseFloat(x.price||0).toFixed(2),
           tracked:x.inventory_management==='shopify',
