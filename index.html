@@ -1982,26 +1982,85 @@ function addToCart(productId, variantId, productName, variantName, image){
   showToast(variantName+' added to restock order','ok');
 }
 
+// Currently picking variant for: {prod, selectedVariant}
+let cartPickerState = null;
+
 function openCartVariantPicker(prod){
-  // Show a quick variant picker in the cart panel
   cartOpen=true;
   document.getElementById('cartPanel').classList.add('open');
+  cartPickerState={prod,variant:null};
+  _renderPicker();
+}
+
+function _renderPicker(){
+  const {prod,variant}=cartPickerState;
   const body=document.getElementById('cartBody');
-  const pickerHtml=`<div style="padding:12px">
-    <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:8px">${prod.title} — select variant:</div>
-    ${(prod.variantData||[]).map(v=>`
-      <div onclick="addToCart('${prod.id}','${v.id}',${JSON.stringify(prod.title)},${JSON.stringify(v.title)},${JSON.stringify(v.image||prod.image||'')})" 
-           style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;margin-bottom:4px;transition:background .12s"
-           onmouseover="this.style.background='#fafaf5'" onmouseout="this.style.background=''">
-        ${v.image?`<img src="${v.image}" style="width:26px;height:26px;border-radius:4px;object-fit:cover;border:1px solid var(--border)">`:'<div style="width:26px;height:26px;border-radius:4px;background:#EAE7D8;flex-shrink:0"></div>'}
-        <span style="font-size:12px;font-weight:500;flex:1">${v.title}</span>
-        <span style="font-size:11px;color:rgba(26,26,24,.4)">${v.qty} in stock</span>
-      </div>`).join('')}
-    <button onclick="renderCart()" style="margin-top:6px;font-size:11px;color:rgba(26,26,24,.4);background:none;border:none;cursor:pointer">← Back</button>
-  </div>`;
-  // Prepend to existing cart
-  const existing=body.innerHTML;
-  body.innerHTML=pickerHtml+(existing.includes('cart-empty')?'':existing);
+
+  if(!variant){
+    // Step 1 — choose variant
+    body.innerHTML=`<div style="padding:12px">
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:8px">SELECT VARIANT — ${prod.title}</div>
+      ${(prod.variantData||[]).map(v=>`
+        <div onclick="cartPickVariant('${v.id}')"
+             style="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;margin-bottom:5px;transition:all .12s"
+             onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(200,169,110,.05)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+          ${v.image
+            ?`<img src="${v.image}" style="width:32px;height:32px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`
+            :`<div style="width:32px;height:32px;border-radius:5px;background:#EAE7D8;flex-shrink:0"></div>`}
+          <span style="font-size:12px;font-weight:500;flex:1;color:var(--ink)">${v.title}</span>
+          <span style="font-size:11px;color:rgba(26,26,24,.4);font-family:'DM Mono',monospace">${v.qty} in stock</span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><path d="M6 3l5 5-5 5"/></svg>
+        </div>`).join('')}
+      <button onclick="cartPickerState=null;renderCart()" style="margin-top:4px;font-size:11px;color:rgba(26,26,24,.4);background:none;border:none;cursor:pointer;padding:4px 0">← Cancel</button>
+    </div>`;
+  } else {
+    // Step 2 — set quantity for chosen variant
+    const v=prod.variantData.find(x=>x.id===variant);
+    body.innerHTML=`<div style="padding:12px">
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:10px">SET QUANTITY</div>
+      <div style="display:flex;align-items:center;gap:9px;padding:10px;background:var(--cream);border-radius:8px;margin-bottom:14px">
+        ${v&&v.image?`<img src="${v.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">`:`<div style="width:36px;height:36px;border-radius:5px;background:#EAE7D8"></div>`}
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ink)">${prod.title}</div>
+          <div style="font-size:11px;color:rgba(26,26,24,.45)">${v?v.title:''} · ${v?v.qty:0} in stock</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <button onclick="cartPickerAdjQty(-10)" style="width:36px;height:36px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+        <input type="number" id="cartPickerQty" value="50" min="1" style="flex:1;padding:8px;text-align:center;font-size:18px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid var(--border2);border-radius:7px;outline:none;background:#fff">
+        <button onclick="cartPickerAdjQty(10)" style="width:36px;height:36px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="cartPickerState.variant=null;_renderPicker()" style="flex:1;padding:9px;border:1.5px solid var(--border2);border-radius:7px;font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;background:#fff">← Back</button>
+        <button onclick="cartPickerConfirm()" style="flex:2;padding:9px;background:var(--gold);border:none;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--ink);cursor:pointer">Add to Restock Order</button>
+      </div>
+    </div>`;
+  }
+}
+
+function cartPickVariant(vid){
+  cartPickerState.variant=vid;
+  _renderPicker();
+}
+
+function cartPickerAdjQty(delta){
+  const el=document.getElementById('cartPickerQty');
+  if(el)el.value=Math.max(1,(parseInt(el.value)||0)+delta);
+}
+
+function cartPickerConfirm(){
+  const {prod,variant}=cartPickerState;
+  const v=prod.variantData.find(x=>x.id===variant);
+  if(!v)return;
+  const qty=parseInt(document.getElementById('cartPickerQty')?.value)||50;
+  const key=String(prod.id)+'-'+String(v.id);
+  const existing=cartItems.find(i=>i.key===key);
+  if(existing){existing.qty+=qty;}
+  else{cartItems.push({key,productId:String(prod.id),variantId:String(v.id),product:prod.title,variant:v.title,image:v.image||prod.image||'',qty});}
+  cartPickerState=null;
+  renderCart();
+  showToast(v.title+' ×'+qty+' added','ok');
 }
 
 function updateCartQty(key,delta){
@@ -2050,28 +2109,29 @@ function renderCart(){
 
 function checkoutCart(){
   if(!cartItems.length)return;
-  // Transfer cart items into the restock modal order lines
-  currentOrderLines=[...cartItems.map(i=>({
+  // Save lines BEFORE openRestock() clears them
+  const savedLines=cartItems.map(i=>({
     productId:i.productId,product:i.product,
     variant:i.variant,image:i.image,qty:i.qty
-  }))];
+  }));
   // Clear cart
   cartItems=[];
   renderCart();
   cartOpen=false;
   document.getElementById('cartPanel').classList.remove('open');
-  // Open restock modal with pre-filled lines
+  // Open modal (this resets currentOrderLines=[])
   openRestock();
-  // Re-populate the lines (openRestock clears them, so set after)
-  currentOrderLines=[...currentOrderLines];
+  // Now restore our saved lines
+  currentOrderLines=savedLines;
   renderOrderLines();
   if(currentOrderLines.length>0){
     document.getElementById('orderSettings').style.display='block';
     document.getElementById('orderDivider').style.display='block';
+    document.getElementById('addLineBtn').style.display='flex';
+    document.getElementById('addLinePanel').style.display='none';
   }
   updateConfirmBtn();
-  // Switch to reorder view
-  // Switch to reorder view
+  // Switch nav to reorder view
   document.querySelectorAll('.nav-btn').forEach(b=>{
     if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'reorder'")){
       setView('reorder',b);
