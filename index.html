@@ -287,6 +287,77 @@ td:first-child{padding-left:16px;}
 .eta-order-input{padding:5px 9px;font-size:12px;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--ink);outline:none;font-family:"Inter",sans-serif;}
 .eta-order-input:focus{border-color:var(--ink);}
 
+
+/* RESTOCK MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,24,.45);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1.5px solid var(--border);}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid var(--border);background:#EAE7D8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);}
+.modal-close{width:26px;height:26px;border-radius:6px;background:transparent;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(26,26,24,.5);line-height:1;}
+.modal-close:hover{background:var(--border);color:var(--ink);}
+.modal-body{padding:18px;overflow-y:auto;flex:1;}
+.modal-section{margin-bottom:14px;}
+.modal-label{font-size:11px;font-weight:600;color:rgba(26,26,24,.6);margin-bottom:5px;letter-spacing:.02em;}
+.modal-search{width:100%;padding:8px 11px;font-size:13px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;color:var(--ink);outline:none;font-family:"Inter",sans-serif;}
+.modal-search:focus{border-color:var(--ink);}
+.modal-search::placeholder{color:rgba(26,26,24,.3);}
+.modal-dropdown{border:1.5px solid var(--border2);border-radius:7px;overflow:hidden;max-height:180px;overflow-y:auto;display:none;}
+.modal-dropdown.open{display:block;}
+.modal-opt{padding:9px 12px;cursor:pointer;font-size:12px;color:var(--ink);display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .1s;}
+.modal-opt:last-child{border-bottom:none;}
+.modal-opt:hover{background:var(--cream);}
+.modal-opt img{width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);}
+.modal-opt-ph{width:32px;height:32px;border-radius:4px;background:#EAE7D8;flex-shrink:0;border:1px solid var(--border);}
+.modal-opt-name{font-weight:500;font-size:12px;}
+.modal-opt-meta{font-size:10px;color:rgba(26,26,24,.4);}
+.selected-product{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cream);border:1.5px solid var(--border);border-radius:7px;margin-bottom:10px;}
+.selected-product img{width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);}
+.selected-product-ph{width:36px;height:36px;border-radius:5px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+.selected-name{font-weight:600;font-size:12px;color:var(--ink);flex:1;}
+.selected-clear{font-size:11px;color:rgba(26,26,24,.4);cursor:pointer;padding:2px 6px;border-radius:4px;}
+.selected-clear:hover{color:var(--red);}
+.variant-select-grid{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;}
+.var-select-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .15s,background .15s;}
+.var-select-row:hover{border-color:var(--border2);background:#fafaf5;}
+.var-select-row.selected{border-color:var(--gold);background:rgba(200,169,110,.06);}
+.var-select-row img{width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);}
+.var-select-ph{width:28px;height:28px;border-radius:4px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+.var-select-name{font-size:12px;font-weight:500;color:var(--ink);flex:1;}
+.var-select-qty{font-size:11px;color:rgba(26,26,24,.4);}
+.qty-row{display:flex;align-items:center;gap:10px;}
+.qty-input{width:80px;padding:7px 10px;font-size:16px;font-weight:700;font-family:"DM Mono",monospace;border:1.5px solid var(--border2);border-radius:7px;text-align:center;background:#fff;color:var(--ink);outline:none;}
+.qty-input:focus{border-color:var(--ink);}
+.qty-btn{width:32px;height:32px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);line-height:1;}
+.qty-btn:hover{background:var(--cream);}
+.ship-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.ship-opt{padding:9px 12px;border:1.5px solid var(--border2);border-radius:7px;cursor:pointer;transition:all .15s;background:#fff;}
+.ship-opt:hover{border-color:var(--border2);background:#fafaf5;}
+.ship-opt.selected{border-color:var(--gold);background:rgba(200,169,110,.06);}
+.ship-opt-label{font-size:11px;font-weight:700;font-family:"Syne",sans-serif;color:var(--ink);margin-bottom:2px;}
+.ship-opt-eta{font-family:"DM Mono",monospace;font-size:12px;font-weight:600;}
+.ship-opt-eta.air{color:#2D5FA6;}
+.ship-opt-eta.sea{color:#3D7A5A;}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+
+/* PURCHASE ORDER LOG */
+.po-log{display:flex;flex-direction:column;gap:0;}
+.po-row{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.po-row:last-child{border-bottom:none;}
+.po-img{width:32px;height:32px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.po-img-ph{width:32px;height:32px;border-radius:5px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+.po-info{flex:1;min-width:0;}
+.po-product{font-weight:600;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.po-variant{font-size:10px;color:rgba(26,26,24,.45);margin-top:1px;}
+.po-qty{font-family:"DM Mono",monospace;font-weight:700;font-size:13px;color:var(--ink);flex-shrink:0;}
+.po-ship{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;flex-shrink:0;}
+.po-ship.air{background:#E6F1FB;color:#185FA5;}
+.po-ship.sea{background:#E1F5EE;color:#0F6E56;}
+.po-eta{font-family:"DM Mono",monospace;font-size:11px;font-weight:600;flex-shrink:0;}
+.po-eta.air{color:#2D5FA6;}
+.po-eta.sea{color:#3D7A5A;}
+.po-date{font-size:10px;color:rgba(26,26,24,.35);flex-shrink:0;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -483,6 +554,10 @@ td:first-child{padding-left:16px;}
           <div class="page-title">REORDER <em>QUEUE</em></div>
           <div class="page-sub" id="reorderSub">Sorted by urgency — most critical first</div>
         </div>
+        <button class="btn-sol gold" onclick="openRestock()" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+          Create Restock Order
+        </button>
       </div>
 
       <!-- ETA CALCULATOR -->
@@ -539,6 +614,15 @@ td:first-child{padding-left:16px;}
       </div>
 
       <div class="card"><div id="reorderTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
+
+      <!-- PURCHASE ORDER LOG -->
+      <div class="page-hdr" style="margin-top:16px">
+        <div>
+          <div class="page-title" style="font-size:16px">PURCHASE <em>ORDERS</em></div>
+          <div class="page-sub">History of restock orders placed</div>
+        </div>
+      </div>
+      <div class="card"><div class="po-log" id="poLog"><div class="empty-state" style="color:rgba(26,26,24,.3)">No restock orders placed yet — click Create Restock Order to get started.</div></div></div>
     </div>
 
     <!-- TOP SELLERS -->
@@ -697,6 +781,77 @@ td:first-child{padding-left:16px;}
 
 <div class="toast" id="toast"><span id="tMsg"></span></div>
 
+<!-- RESTOCK MODAL -->
+<div class="modal-overlay" id="restockModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Create Restock Order</div>
+      <button class="modal-close" onclick="closeRestock()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- PRODUCT SEARCH -->
+      <div class="modal-section">
+        <div class="modal-label">Product</div>
+        <div id="selectedProductWrap" style="display:none"></div>
+        <input type="text" class="modal-search" id="productSearch" placeholder="Search products…" oninput="searchProducts(this.value)" autocomplete="off">
+        <div class="modal-dropdown" id="productDropdown"></div>
+      </div>
+
+      <!-- VARIANT SELECT -->
+      <div class="modal-section" id="variantSection" style="display:none">
+        <div class="modal-label">Variant</div>
+        <div class="variant-select-grid" id="variantGrid"></div>
+      </div>
+
+      <!-- QUANTITY -->
+      <div class="modal-section" id="qtySection" style="display:none">
+        <div class="modal-label">Quantity to order</div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="adjQty(-10)">−</button>
+          <input type="number" class="qty-input" id="restockQty" value="50" min="1">
+          <button class="qty-btn" onclick="adjQty(10)">+</button>
+          <span style="font-size:12px;color:rgba(26,26,24,.4)">units</span>
+        </div>
+      </div>
+
+      <!-- SHIPPING METHOD -->
+      <div class="modal-section" id="shipSection" style="display:none">
+        <div class="modal-label">Shipping method</div>
+        <div class="ship-toggle">
+          <div class="ship-opt selected" id="shipAir" onclick="selectShip('air')">
+            <div class="ship-opt-label">✈ By Air</div>
+            <div class="ship-opt-eta air" id="modalAirEta">—</div>
+            <div style="font-size:10px;color:rgba(26,26,24,.4);margin-top:2px">Fast · higher cost</div>
+          </div>
+          <div class="ship-opt" id="shipSea" onclick="selectShip('sea')">
+            <div class="ship-opt-label">⛵ By Sea</div>
+            <div class="ship-opt-eta sea" id="modalSeaEta">—</div>
+            <div style="font-size:10px;color:rgba(26,26,24,.4);margin-top:2px">Slow · lower cost</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDER DATE -->
+      <div class="modal-section" id="orderDateSection" style="display:none">
+        <div class="modal-label">Order date</div>
+        <input type="date" class="modal-search" id="restockOrderDate" oninput="updateModalETA()" style="max-width:200px">
+      </div>
+
+      <!-- NOTES -->
+      <div class="modal-section" id="notesSection" style="display:none">
+        <div class="modal-label">Notes <span style="font-weight:400;color:rgba(26,26,24,.35)">(optional)</span></div>
+        <input type="text" class="modal-search" id="restockNotes" placeholder="e.g. urgent, check quality on arrival…">
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-out" onclick="closeRestock()">Cancel</button>
+      <button class="btn-sol" id="confirmRestockBtn" onclick="confirmRestock()" style="opacity:.4;pointer-events:none">Confirm Order</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const PROXY = 'https://warehouse-stock-management-app.vercel.app/api/proxy';
 let allProducts = [], salesData = {}, salesDataAll = {}, activeWarehouse = 'us', activeFilter = 'all', activePeriod = 90;
@@ -714,6 +869,217 @@ function parseWH(tags){const t=(tags||'').toLowerCase();const o=[];if(t.includes
 function isDS(tags){return(tags||'').toLowerCase().includes('dropship');}
 function filtered(){return activeWarehouse==='all'?allProducts:allProducts.filter(p=>p.warehouses.includes(activeWarehouse));}
 function maxQ(p){return Math.max(...p.map(x=>x.qty),lowT*2,1);}
+
+
+// ── RESTOCK MODAL ──────────────────────────────────────────
+let poOrders = [];
+let restockState = { product:null, variant:null, ship:'air' };
+
+function openRestock(){
+  restockState = { product:null, variant:null, ship:'air' };
+  document.getElementById('productSearch').value='';
+  document.getElementById('productDropdown').classList.remove('open');
+  document.getElementById('selectedProductWrap').style.display='none';
+  document.getElementById('productSearch').style.display='block';
+  document.getElementById('variantSection').style.display='none';
+  document.getElementById('qtySection').style.display='none';
+  document.getElementById('shipSection').style.display='none';
+  document.getElementById('orderDateSection').style.display='none';
+  document.getElementById('notesSection').style.display='none';
+  document.getElementById('restockQty').value=50;
+  document.getElementById('restockNotes').value='';
+  selectShip('air');
+  // Set today as default order date
+  const today=new Date();
+  const yyyy=today.getFullYear();
+  const mm=String(today.getMonth()+1).padStart(2,'0');
+  const dd=String(today.getDate()).padStart(2,'0');
+  document.getElementById('restockOrderDate').value=`${yyyy}-${mm}-${dd}`;
+  updateModalETA();
+  updateConfirmBtn();
+  document.getElementById('restockModal').classList.add('open');
+}
+
+function closeRestock(){
+  document.getElementById('restockModal').classList.remove('open');
+  document.getElementById('productDropdown').classList.remove('open');
+}
+
+// Close modal when clicking overlay
+document.getElementById('restockModal').addEventListener('click',function(e){
+  if(e.target===this)closeRestock();
+});
+
+function searchProducts(q){
+  const dd=document.getElementById('productDropdown');
+  if(!q.trim()){dd.classList.remove('open');return;}
+  const results=allProducts.filter(p=>p.title.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!results.length){dd.innerHTML='<div class="modal-opt" style="color:rgba(26,26,24,.4)">No products found</div>';dd.classList.add('open');return;}
+  dd.innerHTML=results.map(p=>{
+    const img=p.image?`<img src="${p.image}" onerror="this.style.display='none'">`:'<div class="modal-opt-ph"></div>';
+    return`<div class="modal-opt" onclick="selectProduct('${p.id}')">
+      ${img}
+      <div><div class="modal-opt-name">${p.title}</div><div class="modal-opt-meta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div></div>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function selectProduct(id){
+  const p=allProducts.find(x=>String(x.id)===String(id));
+  if(!p)return;
+  restockState.product=p;
+  restockState.variant=null;
+  document.getElementById('productDropdown').classList.remove('open');
+  document.getElementById('productSearch').style.display='none';
+  const img=p.image?`<img src="${p.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`:'<div class="selected-product-ph"></div>';
+  document.getElementById('selectedProductWrap').innerHTML=`
+    <div class="selected-product">
+      ${img}
+      <div class="selected-name">${p.title}</div>
+      <span class="selected-clear" onclick="clearProduct()">✕ Change</span>
+    </div>`;
+  document.getElementById('selectedProductWrap').style.display='block';
+  renderVariantGrid(p);
+  document.getElementById('variantSection').style.display='block';
+  document.getElementById('qtySection').style.display='none';
+  document.getElementById('shipSection').style.display='none';
+  document.getElementById('orderDateSection').style.display='none';
+  document.getElementById('notesSection').style.display='none';
+  updateConfirmBtn();
+}
+
+function clearProduct(){
+  restockState.product=null;
+  restockState.variant=null;
+  document.getElementById('selectedProductWrap').style.display='none';
+  document.getElementById('productSearch').style.display='block';
+  document.getElementById('productSearch').value='';
+  document.getElementById('variantSection').style.display='none';
+  document.getElementById('qtySection').style.display='none';
+  document.getElementById('shipSection').style.display='none';
+  document.getElementById('orderDateSection').style.display='none';
+  document.getElementById('notesSection').style.display='none';
+  updateConfirmBtn();
+}
+
+function renderVariantGrid(p){
+  if(!p.variantData||p.variantData.length<=1){
+    // single variant — auto-select
+    restockState.variant=p.variantData?p.variantData[0]:{title:'Default',qty:0,image:p.image};
+    document.getElementById('variantSection').style.display='none';
+    document.getElementById('qtySection').style.display='block';
+    document.getElementById('shipSection').style.display='block';
+    document.getElementById('orderDateSection').style.display='block';
+    document.getElementById('notesSection').style.display='block';
+    updateConfirmBtn();
+    return;
+  }
+  document.getElementById('variantGrid').innerHTML=p.variantData.map((v,i)=>{
+    const img=v.image?`<img src="${v.image}" onerror="this.style.display='none'">`:'<div class="var-select-ph"></div>';
+    const sc=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
+    return`<div class="var-select-row" id="vsr-${i}" onclick="selectVariant(${i})">
+      ${img}
+      <span class="var-select-name">${v.title}</span>
+      <span class="var-select-qty">${v.qty} in stock</span>
+      <span class="badge ${sc}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectVariant(i){
+  const p=restockState.product;
+  if(!p)return;
+  restockState.variant=p.variantData[i];
+  document.querySelectorAll('.var-select-row').forEach((r,ri)=>r.classList.toggle('selected',ri===i));
+  document.getElementById('qtySection').style.display='block';
+  document.getElementById('shipSection').style.display='block';
+  document.getElementById('orderDateSection').style.display='block';
+  document.getElementById('notesSection').style.display='block';
+  updateConfirmBtn();
+}
+
+function selectShip(mode){
+  restockState.ship=mode;
+  document.getElementById('shipAir').classList.toggle('selected',mode==='air');
+  document.getElementById('shipSea').classList.toggle('selected',mode==='sea');
+}
+
+function adjQty(delta){
+  const el=document.getElementById('restockQty');
+  el.value=Math.max(1,(parseInt(el.value)||0)+delta);
+}
+
+function updateModalETA(){
+  const orderDate=document.getElementById('restockOrderDate')?.value;
+  const airDays=parseInt(document.getElementById('etaAirDays')?.value)||7;
+  const seaDays=parseInt(document.getElementById('etaSeaDays')?.value)||30;
+  const base=orderDate?new Date(orderDate+'T12:00:00'):new Date();
+  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+  const airEl=document.getElementById('modalAirEta');
+  const seaEl=document.getElementById('modalSeaEta');
+  if(airEl)airEl.textContent=fmt(addDays(base,airDays));
+  if(seaEl)seaEl.textContent=fmt(addDays(base,seaDays));
+}
+
+function updateConfirmBtn(){
+  const btn=document.getElementById('confirmRestockBtn');
+  const ready=restockState.product&&restockState.variant;
+  btn.style.opacity=ready?'1':'0.4';
+  btn.style.pointerEvents=ready?'auto':'none';
+}
+
+function confirmRestock(){
+  const p=restockState.product;
+  const v=restockState.variant;
+  if(!p||!v)return;
+  const qty=parseInt(document.getElementById('restockQty').value)||1;
+  const ship=restockState.ship;
+  const notes=document.getElementById('restockNotes').value.trim();
+  const orderDate=document.getElementById('restockOrderDate').value;
+  const airDays=parseInt(document.getElementById('etaAirDays')?.value)||7;
+  const seaDays=parseInt(document.getElementById('etaSeaDays')?.value)||30;
+  const base=orderDate?new Date(orderDate+'T12:00:00'):new Date();
+  const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  const eta=fmt(addDays(base,ship==='air'?airDays:seaDays));
+  const orderFmt=fmt(base);
+
+  poOrders.unshift({
+    id:Date.now(),
+    product:p.title,
+    variant:v.title,
+    image:v.image||p.image||null,
+    qty,
+    ship,
+    eta,
+    orderDate:orderFmt,
+    notes
+  });
+  renderPOLog();
+  closeRestock();
+  showToast(`Restock order created — ${qty} × ${v.title}`,'ok');
+}
+
+function renderPOLog(){
+  const el=document.getElementById('poLog');
+  if(!poOrders.length){el.innerHTML='<div class="empty-state" style="color:rgba(26,26,24,.3)">No restock orders placed yet.</div>';return;}
+  el.innerHTML=poOrders.map(o=>{
+    const img=o.image?`<img src="${o.image}" class="po-img" onerror="this.style.display='none'">`:'<div class="po-img-ph"></div>';
+    return`<div class="po-row">
+      ${img}
+      <div class="po-info">
+        <div class="po-product">${o.product}</div>
+        <div class="po-variant">${o.variant}${o.notes?` · ${o.notes}`:''}</div>
+      </div>
+      <div class="po-qty">×${o.qty}</div>
+      <span class="po-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
+      <div class="po-eta ${o.ship}">${o.eta}</div>
+      <div class="po-date">Ordered ${o.orderDate}</div>
+    </div>`;
+  }).join('');
+}
 
 async function startLoad(){
   const dot=document.getElementById('syncDot');
@@ -786,13 +1152,15 @@ function processProducts(raw){
     let wh=parseWH(p.tags);
     if(noTags&&qty>0)wh=['us','uk','au'];
     if(!wh.length)return null;
-    const variantData=v.map((x,vi)=>({
+    const imgById={};
+    (p.images||[]).forEach(img=>{if(img.id)imgById[img.id]=img.src;});
+    const variantData=v.map(x=>({
       title:x.title,
       qty:parseInt(x.inventory_quantity)||0,
       status:status(parseInt(x.inventory_quantity)||0),
       price:parseFloat(x.price||0).toFixed(2),
       tracked:x.inventory_management==='shopify',
-      image:p.images&&p.images[vi]?p.images[vi].src:(p.image?p.image.src:null)
+      image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null)
     }));
     return{
       id:p.id,
@@ -896,7 +1264,7 @@ function tblHTML(prods,showWh,prefix){
       const vpct=Math.round((v.qty/Math.max(mx,1))*100);
       const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:`<div class="var-img-ph"></div>`;
       return`<tr class="variant-row">
-        <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
+        <td style="padding-left:58px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
         ${showWh?'<td></td>':''}
         <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${vfc}" style="width:${vpct}%"></div></div></div></td>
         <td><span class="variant-qty">${v.qty}</span></td>
