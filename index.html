@@ -1300,7 +1300,7 @@ async function sendToSupplier(order){
   <!-- CONFIRM ACTION BANNER — replaces "Upload Packing Image" -->
   <tr><td style="background:#F5F3E9;padding:24px 32px;text-align:center;border-top:1px solid #EDEAE0">
     <div style="font-size:13px;color:#555;margin-bottom:14px">📬 Please confirm you have received this order and can fulfil the quantities listed above.</div>
-    <a href="mailto:${document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au'}?subject=RE: Purchase Order ${order.id} — Confirmed&body=Hi FoldifyCase team,%0A%0AI confirm receipt of Purchase Order ${order.id} and can fulfil all listed quantities.%0A%0AExpected dispatch: %0A%0ARegards," 
+    <a href="mailto:${fromEmail}?subject=RE: Purchase Order ${order.id} — Confirmed&body=Hi FoldifyCase team,%0A%0AI confirm receipt of Purchase Order ${order.id} and can fulfil all listed quantities.%0A%0AExpected dispatch: %0A%0ARegards," 
        style="display:inline-block;background:#1A1A18;color:#C8A96E;font-size:13px;font-weight:700;letter-spacing:.06em;padding:14px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif">
       ✅ &nbsp;CONFIRM THIS ORDER
     </a>
