@@ -57,6 +57,33 @@ export default async function handler(req, res) {
         return res.status(200).json(d);
       }
 
+      if (action === 'inventory_levels') {
+        // Fetch inventory levels for given location IDs
+        // Returns all variant inventory across those locations
+        const locationIds = req.query.location_ids || '';
+        if (!locationIds) return res.status(400).json({ error: 'location_ids required' });
+
+        // Shopify limits to 250 per page — paginate if needed
+        let allLevels = [];
+        let pageUrl = `https://${STORE}/admin/api/${API_VERSION}/inventory_levels.json?location_ids=${locationIds}&limit=250`;
+
+        // Fetch up to 10 pages (2500 inventory records)
+        for (let page = 0; page < 10; page++) {
+          const r = await fetch(pageUrl, { headers: shopifyHeaders });
+          const d = await r.json();
+          const levels = d.inventory_levels || [];
+          allLevels = allLevels.concat(levels);
+
+          // Check for next page via Link header
+          const linkHeader = r.headers.get('link') || '';
+          const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+          if (!nextMatch || levels.length < 250) break;
+          pageUrl = nextMatch[1];
+        }
+
+        return res.status(200).json({ inventory_levels: allLevels });
+      }
+
       return res.status(400).json({ error: `Unknown shopify action: ${action}` });
     }
 
