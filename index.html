@@ -358,6 +358,51 @@ td:first-child{padding-left:16px;}
 .po-eta.sea{color:#3D7A5A;}
 .po-date{font-size:10px;color:rgba(26,26,24,.35);flex-shrink:0;}
 
+
+/* ORDER LINE ITEMS in modal */
+.order-lines{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.order-line{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);background:#fff;}
+.order-line:last-child{border-bottom:none;}
+.order-line:hover{background:#fafaf8;}
+.ol-img{width:30px;height:30px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.ol-img-ph{width:30px;height:30px;border-radius:4px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+.ol-info{flex:1;min-width:0;}
+.ol-product{font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ol-variant{font-size:10px;color:rgba(26,26,24,.4);margin-top:1px;}
+.ol-qty{font-family:"DM Mono",monospace;font-weight:700;font-size:12px;color:var(--ink);background:#EAE7D8;padding:2px 8px;border-radius:4px;flex-shrink:0;}
+.ol-remove{width:20px;height:20px;border-radius:4px;background:transparent;border:none;cursor:pointer;color:rgba(26,26,24,.3);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ol-remove:hover{background:#FCEBEB;color:var(--red);}
+.add-line-btn{width:100%;padding:8px;background:var(--cream);border:1.5px dashed var(--border2);border-radius:8px;font-family:"Inter",sans-serif;font-size:12px;color:rgba(26,26,24,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;transition:all .15s;}
+.add-line-btn:hover{border-color:var(--gold);color:var(--gold-d);background:rgba(200,169,110,.05);}
+.modal-divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.supplier-section{background:var(--cream);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;}
+.supplier-title{font-family:"Syne",sans-serif;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:8px;}
+.supplier-input{width:100%;padding:7px 10px;font-size:12px;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--ink);outline:none;font-family:"Inter",sans-serif;margin-bottom:6px;}
+.supplier-input:focus{border-color:var(--ink);}
+.supplier-input::placeholder{color:rgba(26,26,24,.3);}
+.supplier-hint{font-size:10px;color:rgba(26,26,24,.4);line-height:1.5;}
+.po-group{background:#fff;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.po-group-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#EAE7D8;border-bottom:1px solid var(--border);}
+.po-group-id{font-family:"DM Mono",monospace;font-weight:700;font-size:11px;color:var(--ink);}
+.po-group-date{font-size:10px;color:rgba(26,26,24,.45);margin-top:2px;}
+.po-group-ship{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;}
+.po-group-ship.air{background:#E6F1FB;color:#185FA5;}
+.po-group-ship.sea{background:#E1F5EE;color:#0F6E56;}
+.po-group-eta{font-family:"DM Mono",monospace;font-size:11px;font-weight:600;}
+.po-group-eta.air{color:#2D5FA6;}
+.po-group-eta.sea{color:#3D7A5A;}
+.po-group-send{font-size:10px;padding:3px 9px;border:1px solid var(--border2);border-radius:5px;background:#fff;cursor:pointer;color:var(--ink);font-family:"Inter",sans-serif;font-weight:500;transition:all .15s;}
+.po-group-send:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+.po-group-sent{font-size:10px;color:var(--green);font-weight:600;}
+.po-line{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);}
+.po-line:last-child{border-bottom:none;}
+.po-line-img{width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.po-line-img-ph{width:28px;height:28px;border-radius:4px;background:#EAE7D8;border:1px solid var(--border);flex-shrink:0;}
+.po-line-info{flex:1;min-width:0;}
+.po-line-product{font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.po-line-variant{font-size:10px;color:rgba(26,26,24,.4);}
+.po-line-qty{font-family:"DM Mono",monospace;font-weight:700;font-size:12px;color:var(--ink);background:#EAE7D8;padding:2px 7px;border-radius:4px;flex-shrink:0;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -873,28 +918,26 @@ function maxQ(p){return Math.max(...p.map(x=>x.qty),lowT*2,1);}
 
 // ── RESTOCK MODAL ──────────────────────────────────────────
 let poOrders = [];
+let currentOrderLines = [];
 let restockState = { product:null, variant:null, ship:'air' };
 
+function todayStr(){
+  const d=new Date();
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function openRestock(){
-  restockState = { product:null, variant:null, ship:'air' };
-  document.getElementById('productSearch').value='';
-  document.getElementById('productDropdown').classList.remove('open');
-  document.getElementById('selectedProductWrap').style.display='none';
-  document.getElementById('productSearch').style.display='block';
-  document.getElementById('variantSection').style.display='none';
-  document.getElementById('qtySection').style.display='none';
-  document.getElementById('shipSection').style.display='none';
-  document.getElementById('orderDateSection').style.display='none';
-  document.getElementById('notesSection').style.display='none';
-  document.getElementById('restockQty').value=50;
-  document.getElementById('restockNotes').value='';
+  currentOrderLines=[];
+  restockState={product:null,variant:null,ship:'air'};
+  renderOrderLines();
+  resetAddLinePanel();
   selectShip('air');
-  // Set today as default order date
-  const today=new Date();
-  const yyyy=today.getFullYear();
-  const mm=String(today.getMonth()+1).padStart(2,'0');
-  const dd=String(today.getDate()).padStart(2,'0');
-  document.getElementById('restockOrderDate').value=`${yyyy}-${mm}-${dd}`;
+  document.getElementById('restockOrderDate').value=todayStr();
+  document.getElementById('restockNotes').value='';
+  document.getElementById('supplierEmail').value='';
+  document.getElementById('supplierName').value='';
+  document.getElementById('orderSettings').style.display='none';
+  document.getElementById('orderDivider').style.display='none';
   updateModalETA();
   updateConfirmBtn();
   document.getElementById('restockModal').classList.add('open');
@@ -905,10 +948,38 @@ function closeRestock(){
   document.getElementById('productDropdown').classList.remove('open');
 }
 
-// Close modal when clicking overlay
-document.getElementById('restockModal').addEventListener('click',function(e){
-  if(e.target===this)closeRestock();
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('restockModal').addEventListener('click',function(e){
+    if(e.target===this)closeRestock();
+  });
 });
+
+function resetAddLinePanel(){
+  restockState.product=null;
+  restockState.variant=null;
+  document.getElementById('productSearch').value='';
+  document.getElementById('productSearch').style.display='block';
+  document.getElementById('selectedProductWrap').style.display='none';
+  document.getElementById('productDropdown').classList.remove('open');
+  document.getElementById('variantSection').style.display='none';
+  document.getElementById('qtySection').style.display='none';
+  document.getElementById('addLineBtnRow').style.display='none';
+  document.getElementById('restockQty').value=50;
+  document.getElementById('addLineBtn').style.display='flex';
+  document.getElementById('addLinePanel').style.display='none';
+}
+
+function showAddLine(){
+  document.getElementById('addLineBtn').style.display='none';
+  document.getElementById('addLinePanel').style.display='block';
+  document.getElementById('productSearch').focus();
+}
+
+function cancelAddLine(){
+  resetAddLinePanel();
+  document.getElementById('addLinePanel').style.display='none';
+  document.getElementById('addLineBtn').style.display='flex';
+}
 
 function searchProducts(q){
   const dd=document.getElementById('productDropdown');
@@ -932,47 +1003,33 @@ function selectProduct(id){
   restockState.variant=null;
   document.getElementById('productDropdown').classList.remove('open');
   document.getElementById('productSearch').style.display='none';
-  const img=p.image?`<img src="${p.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`:'<div class="selected-product-ph"></div>';
+  const imgTag=p.image?`<img src="${p.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`:'<div class="selected-product-ph"></div>';
   document.getElementById('selectedProductWrap').innerHTML=`
     <div class="selected-product">
-      ${img}
+      ${imgTag}
       <div class="selected-name">${p.title}</div>
       <span class="selected-clear" onclick="clearProduct()">✕ Change</span>
     </div>`;
   document.getElementById('selectedProductWrap').style.display='block';
   renderVariantGrid(p);
-  document.getElementById('variantSection').style.display='block';
-  document.getElementById('qtySection').style.display='none';
-  document.getElementById('shipSection').style.display='none';
-  document.getElementById('orderDateSection').style.display='none';
-  document.getElementById('notesSection').style.display='none';
-  updateConfirmBtn();
 }
 
 function clearProduct(){
-  restockState.product=null;
-  restockState.variant=null;
+  restockState.product=null;restockState.variant=null;
   document.getElementById('selectedProductWrap').style.display='none';
   document.getElementById('productSearch').style.display='block';
   document.getElementById('productSearch').value='';
   document.getElementById('variantSection').style.display='none';
   document.getElementById('qtySection').style.display='none';
-  document.getElementById('shipSection').style.display='none';
-  document.getElementById('orderDateSection').style.display='none';
-  document.getElementById('notesSection').style.display='none';
-  updateConfirmBtn();
+  document.getElementById('addLineBtnRow').style.display='none';
 }
 
 function renderVariantGrid(p){
   if(!p.variantData||p.variantData.length<=1){
-    // single variant — auto-select
     restockState.variant=p.variantData?p.variantData[0]:{title:'Default',qty:0,image:p.image};
     document.getElementById('variantSection').style.display='none';
     document.getElementById('qtySection').style.display='block';
-    document.getElementById('shipSection').style.display='block';
-    document.getElementById('orderDateSection').style.display='block';
-    document.getElementById('notesSection').style.display='block';
-    updateConfirmBtn();
+    document.getElementById('addLineBtnRow').style.display='block';
     return;
   }
   document.getElementById('variantGrid').innerHTML=p.variantData.map((v,i)=>{
@@ -985,6 +1042,9 @@ function renderVariantGrid(p){
       <span class="badge ${sc}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span>
     </div>`;
   }).join('');
+  document.getElementById('variantSection').style.display='block';
+  document.getElementById('qtySection').style.display='none';
+  document.getElementById('addLineBtnRow').style.display='none';
 }
 
 function selectVariant(i){
@@ -993,10 +1053,58 @@ function selectVariant(i){
   restockState.variant=p.variantData[i];
   document.querySelectorAll('.var-select-row').forEach((r,ri)=>r.classList.toggle('selected',ri===i));
   document.getElementById('qtySection').style.display='block';
-  document.getElementById('shipSection').style.display='block';
-  document.getElementById('orderDateSection').style.display='block';
-  document.getElementById('notesSection').style.display='block';
+  document.getElementById('addLineBtnRow').style.display='block';
+}
+
+function addLineToOrder(){
+  const p=restockState.product;
+  const v=restockState.variant;
+  if(!p||!v)return;
+  const qty=parseInt(document.getElementById('restockQty').value)||1;
+  currentOrderLines.push({
+    productId:String(p.id),
+    product:p.title,
+    variant:v.title,
+    image:v.image||p.image||null,
+    qty
+  });
+  renderOrderLines();
+  cancelAddLine();
+  if(currentOrderLines.length>0){
+    document.getElementById('orderSettings').style.display='block';
+    document.getElementById('orderDivider').style.display='block';
+  }
   updateConfirmBtn();
+}
+
+function removeOrderLine(i){
+  currentOrderLines.splice(i,1);
+  renderOrderLines();
+  if(!currentOrderLines.length){
+    document.getElementById('orderSettings').style.display='none';
+    document.getElementById('orderDivider').style.display='none';
+  }
+  updateConfirmBtn();
+}
+
+function renderOrderLines(){
+  const wrap=document.getElementById('orderLines');
+  const badge=document.getElementById('lineCountBadge');
+  badge.textContent=currentOrderLines.length===0?'0 items':currentOrderLines.length+' item'+(currentOrderLines.length!==1?'s':'');
+  if(!currentOrderLines.length){wrap.style.display='none';return;}
+  wrap.style.display='flex';
+  wrap.innerHTML=currentOrderLines.map((l,i)=>{
+    const img=l.image?`<img src="${l.image}" class="ol-img" onerror="this.style.display='none'">`:'<div class="ol-img-ph"></div>';
+    return`<div class="order-line">
+      ${img}
+      <div class="ol-info">
+        <div class="ol-product">${l.product}</div>
+        <div class="ol-variant">${l.variant}</div>
+      </div>
+      <div class="ol-qty">×${l.qty}</div>
+      <button class="ol-remove" onclick="removeOrderLine(${i})" title="Remove">×</button>
+    </div>`;
+  }).join('');
 }
 
 function selectShip(mode){
@@ -1025,19 +1133,19 @@ function updateModalETA(){
 
 function updateConfirmBtn(){
   const btn=document.getElementById('confirmRestockBtn');
-  const ready=restockState.product&&restockState.variant;
+  const ready=currentOrderLines.length>0;
   btn.style.opacity=ready?'1':'0.4';
   btn.style.pointerEvents=ready?'auto':'none';
+  btn.textContent=ready?`Place Order (${currentOrderLines.length} item${currentOrderLines.length!==1?'s':''})`:'Place Order';
 }
 
-function confirmRestock(){
-  const p=restockState.product;
-  const v=restockState.variant;
-  if(!p||!v)return;
-  const qty=parseInt(document.getElementById('restockQty').value)||1;
+async function confirmRestock(){
+  if(!currentOrderLines.length)return;
   const ship=restockState.ship;
   const notes=document.getElementById('restockNotes').value.trim();
   const orderDate=document.getElementById('restockOrderDate').value;
+  const supplierEmail=document.getElementById('supplierEmail').value.trim();
+  const supplierName=document.getElementById('supplierName').value.trim();
   const airDays=parseInt(document.getElementById('etaAirDays')?.value)||7;
   const seaDays=parseInt(document.getElementById('etaSeaDays')?.value)||30;
   const base=orderDate?new Date(orderDate+'T12:00:00'):new Date();
@@ -1045,41 +1153,129 @@ function confirmRestock(){
   const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
   const eta=fmt(addDays(base,ship==='air'?airDays:seaDays));
   const orderFmt=fmt(base);
+  const orderId='PO-'+Date.now().toString(36).toUpperCase().slice(-6);
 
-  poOrders.unshift({
-    id:Date.now(),
-    product:p.title,
-    variant:v.title,
-    image:v.image||p.image||null,
-    qty,
-    ship,
-    eta,
+  const order={
+    id:orderId,
+    lines:[...currentOrderLines],
+    ship,eta,
     orderDate:orderFmt,
-    notes
-  });
+    notes,
+    supplierEmail,
+    supplierName,
+    sent:false
+  };
+  poOrders.unshift(order);
+
+  if(supplierEmail){
+    await sendToSupplier(order);
+  }
+
   renderPOLog();
   closeRestock();
-  showToast(`Restock order created — ${qty} × ${v.title}`,'ok');
+  showToast(`Order ${orderId} placed — ${currentOrderLines.length} item${currentOrderLines.length!==1?'s':''}${supplierEmail?' · Supplier notified':''},'ok');
+}
+
+async function sendToSupplier(order){
+  const emailBody=`<!DOCTYPE html><html><body>
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#1A1A18;padding:20px 24px;border-bottom:3px solid #C8A96E">
+        <div style="color:#fff;font-size:16px;font-weight:700;letter-spacing:.05em">FOLDIFYCASE</div>
+        <div style="color:#C8A96E;font-size:11px;letter-spacing:.15em;text-transform:uppercase">Purchase Order ${order.id}</div>
+      </div>
+      <div style="padding:24px;background:#F5F3E9">
+        <p style="font-size:13px;color:#444;margin-bottom:16px">Dear ${order.supplierName||'Supplier'},</p>
+        <p style="font-size:13px;color:#444;margin-bottom:20px">Please find our purchase order details below.</p>
+        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:20px">
+          <thead><tr style="background:#EAE7D8">
+            <th style="padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Product</th>
+            <th style="padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Variant</th>
+            <th style="padding:10px 14px;text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Qty</th>
+          </tr></thead>
+          <tbody>${order.lines.map(l=>`<tr style="border-top:1px solid #eee">
+            <td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18">${l.product}</td>
+            <td style="padding:10px 14px;font-size:12px;color:#555">${l.variant}</td>
+            <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#1A1A18;text-align:center">${l.qty}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:20px">
+          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Order reference</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.id}</td></tr>
+          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Order date</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.orderDate}</td></tr>
+          <tr><td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #eee">Shipping method</td><td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18;border-bottom:1px solid #eee">${order.ship==='air'?'By Air (Express)':'By Sea (Standard)'}</td></tr>
+          <tr><td style="padding:10px 14px;font-size:12px;color:#888">Expected arrival</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:${order.ship==='air'?'#2D5FA6':'#3D7A5A'}">${order.eta}</td></tr>
+          ${order.notes?`<tr><td style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid #eee">Notes</td><td style="padding:10px 14px;font-size:12px;color:#555;border-top:1px solid #eee">${order.notes}</td></tr>`:''}
+        </table>
+        <p style="font-size:12px;color:#888">Please confirm receipt of this order. Thank you.</p>
+        <p style="font-size:12px;color:#888;margin-top:8px">— FoldifyCase Warehouse Team</p>
+      </div>
+    </div>
+  </body></html>`;
+
+  try{
+    const r=await fetch(`${PROXY}?service=alert`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        to:[order.supplierEmail],
+        from_name:'FoldifyCase Warehouse',
+        from_email:document.getElementById('fromEmail')?.value||'alerts@foldifycase.com',
+        subject:`Purchase Order ${order.id} — FoldifyCase`,
+        html:emailBody,
+        type:'supplier',warehouse:'',products:[]
+      })
+    });
+    if(r.ok){order.sent=true;}
+  }catch(e){console.warn('Supplier email failed:',e);}
+}
+
+async function resendToSupplier(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+  const email=prompt('Supplier email address:',order.supplierEmail||'');
+  if(!email)return;
+  order.supplierEmail=email;
+  order.sent=false;
+  await sendToSupplier(order);
+  renderPOLog();
+  showToast('Order sent to supplier','ok');
 }
 
 function renderPOLog(){
   const el=document.getElementById('poLog');
-  if(!poOrders.length){el.innerHTML='<div class="empty-state" style="color:rgba(26,26,24,.3)">No restock orders placed yet.</div>';return;}
+  if(!poOrders.length){
+    el.innerHTML='<div class="empty-state" style="color:rgba(26,26,24,.3)">No restock orders placed yet — click Create Restock Order to get started.</div>';
+    return;
+  }
   el.innerHTML=poOrders.map(o=>{
-    const img=o.image?`<img src="${o.image}" class="po-img" onerror="this.style.display='none'">`:'<div class="po-img-ph"></div>';
-    return`<div class="po-row">
-      ${img}
-      <div class="po-info">
-        <div class="po-product">${o.product}</div>
-        <div class="po-variant">${o.variant}${o.notes?` · ${o.notes}`:''}</div>
+    const sendBtn=o.sent
+      ?`<span class="po-group-sent">✓ Sent to supplier</span>`
+      :`<button class="po-group-send" onclick="resendToSupplier('${o.id}')">✉ Send to supplier</button>`;
+    const lines=o.lines.map(l=>{
+      const img=l.image?`<img src="${l.image}" class="po-line-img" onerror="this.style.display='none'">`:'<div class="po-line-img-ph"></div>';
+      return`<div class="po-line">
+        ${img}
+        <div class="po-line-info">
+          <div class="po-line-product">${l.product}</div>
+          <div class="po-line-variant">${l.variant}</div>
+        </div>
+        <div class="po-line-qty">×${l.qty}</div>
+      </div>`;
+    }).join('');
+    return`<div class="po-group">
+      <div class="po-group-hdr">
+        <div style="flex:1;min-width:0">
+          <div class="po-group-id">${o.id}</div>
+          <div class="po-group-date">Ordered ${o.orderDate}${o.notes?' · '+o.notes:''}</div>
+        </div>
+        <span class="po-group-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
+        <div class="po-group-eta ${o.ship}" style="margin:0 8px">${o.eta}</div>
+        ${sendBtn}
       </div>
-      <div class="po-qty">×${o.qty}</div>
-      <span class="po-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
-      <div class="po-eta ${o.ship}">${o.eta}</div>
-      <div class="po-date">Ordered ${o.orderDate}</div>
+      ${lines}
     </div>`;
   }).join('');
 }
+
 
 async function startLoad(){
   const dot=document.getElementById('syncDot');
