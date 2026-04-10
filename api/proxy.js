@@ -84,6 +84,33 @@ export default async function handler(req, res) {
         return res.status(200).json({ inventory_levels: allLevels });
       }
 
+      // Set inventory quantity at a specific location
+      if (action === 'set_inventory') {
+        if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
+        const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        const { inventory_item_id, location_id, available } = body;
+        if (!inventory_item_id || !location_id || available === undefined) {
+          return res.status(400).json({ error: 'inventory_item_id, location_id, available required' });
+        }
+        const r = await fetch(`https://${STORE}/admin/api/${API_VERSION}/inventory_levels/set.json`, {
+          method: 'POST',
+          headers: shopifyHeaders,
+          body: JSON.stringify({ inventory_item_id, location_id, available: parseInt(available) })
+        });
+        const d = await r.json();
+        if (!r.ok) return res.status(r.status).json({ error: d.errors || 'Shopify error', detail: d });
+        return res.status(200).json({ success: true, inventory_level: d.inventory_level });
+      }
+
+      // Get inventory item ID for a variant (needed to set inventory)
+      if (action === 'inventory_item') {
+        const variantId = req.query.variant_id;
+        if (!variantId) return res.status(400).json({ error: 'variant_id required' });
+        const r = await fetch(`https://${STORE}/admin/api/${API_VERSION}/variants/${variantId}.json?fields=id,inventory_item_id`, { headers: shopifyHeaders });
+        const d = await r.json();
+        return res.status(200).json(d);
+      }
+
       return res.status(400).json({ error: `Unknown shopify action: ${action}` });
     }
 
