@@ -455,6 +455,26 @@ td:first-child{padding-left:16px;}
 .cart-panel-ftr{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:6px;}
 .cart-empty{padding:24px;text-align:center;font-size:12px;color:rgba(26,26,24,.35);}
 
+
+/* REORDER QUEUE — collapsible rows */
+.rq-list{display:flex;flex-direction:column;gap:0;}
+.rq-row{border-bottom:1px solid var(--border);}
+.rq-row:last-child{border-bottom:none;}
+.rq-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .12s;user-select:none;}
+.rq-header:hover{background:#fafaf5;}
+.rq-rank{font-family:"DM Mono",monospace;font-size:11px;color:rgba(26,26,24,.3);width:18px;flex-shrink:0;text-align:right;}
+.rq-arrow{font-size:9px;color:rgba(26,26,24,.3);transition:transform .18s;flex-shrink:0;margin-right:2px;}
+.rq-arrow.open{transform:rotate(90deg);}
+.rq-title{font-size:12px;font-weight:600;color:var(--ink);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rq-body{display:none;padding:10px 14px 12px 46px;background:#fafaf8;border-top:1px solid var(--border);}
+.rq-body.open{display:block;}
+.rq-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
+.rq-cell{background:#fff;border:1px solid var(--border);border-radius:7px;padding:8px 10px;}
+.rq-cell-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:4px;font-weight:600;}
+.rq-cell-value{font-family:"DM Mono",monospace;font-size:13px;font-weight:700;color:var(--ink);}
+.rq-cell-value.air{color:#2D5FA6;}
+.rq-cell-value.sea{color:#3D7A5A;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -2583,44 +2603,68 @@ function calcETA(){
 function renderReorder(p){
   const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>a.qty-b.qty);
   if(!list.length){document.getElementById('reorderTable').innerHTML='<div class="empty-state" style="color:var(--green)">✓ No products need reordering right now</div>';return;}
-  const mx=maxQ(p);
   const {airDate,seaDate}=getETADates();
-  document.getElementById('reorderTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:4%">#</th>
-    <th style="width:28%">Product</th>
-    <th style="width:6%">Units</th>
-    <th style="width:9%">Sold 90d</th>
-    <th style="width:9%">Suggest</th>
-    <th style="width:10%">Status</th>
-    <th style="width:9%"><span style="color:#2D5FA6">✈ Air ETA</span></th>
-    <th style="width:9%"><span style="color:#3D7A5A">⛵ Sea ETA</span></th>
-    <th style="width:9%">Restock</th>
-  </tr></thead><tbody>${list.map((x,i)=>{
+  document.getElementById('reorderTable').innerHTML=`<div class="rq-list">${list.map((x,i)=>{
     const imgUrl=x.image||'';
-    const imgTag=imgUrl?`<img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'" style="flex-shrink:0">`:`<div class="prod-img-placeholder" style="flex-shrink:0"></div>`;
-    return`<tr>
-    <td style="color:rgba(26,26,24,.3);font-size:11px;font-family:'DM Mono',monospace">${i+1}</td>
-    <td>
-      <div class="prod-img-wrap">
-        ${imgTag}
-        <div>
-          <div class="pname">${x.title}</div>
-          ${activeWarehouse==='all'?`<div class="pmeta">${whDots(x.warehouses)}</div>`:''}
+    const imgTag=imgUrl
+      ?`<img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'" style="flex-shrink:0">`
+      :`<div class="prod-img-placeholder" style="flex-shrink:0"></div>`;
+    const bdgCls=x.status==='critical'?'b-crit':'b-low';
+    const bdgLabel=x.status==='critical'?'Critical':'Low';
+    const suggestQty=Math.max(50-x.qty,10);
+    return`<div class="rq-row">
+      <div class="rq-header" onclick="toggleRQ('rq-body-${i}','rq-arr-${i}')">
+        <span class="rq-rank">${i+1}</span>
+        <span class="rq-arrow" id="rq-arr-${i}">▶</span>
+        <div class="prod-img-wrap" style="flex:1;min-width:0;gap:8px">
+          ${imgTag}
+          <div style="min-width:0">
+            <div class="rq-title">${x.title}</div>
+            <div class="pmeta" style="margin-top:1px">
+              <span class="badge ${bdgCls}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${bdgLabel}</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;margin-left:6px">${x.qty} units</span>
+              ${activeWarehouse==='all'?`<span style="margin-left:6px">${whDots(x.warehouses)}</span>`:''}
+            </div>
+          </div>
         </div>
       </div>
-    </td>
-    <td><span class="qty-num">${x.qty}</span></td>
-    <td><span class="sales-chip">${x.sold90}</span></td>
-    <td style="font-size:11px;color:rgba(26,26,24,.5);font-family:'DM Mono',monospace">${Math.max(50-x.qty,10)} units</td>
-    <td><span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span></td>
-    <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#2D5FA6">${airDate}</td>
-    <td style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#3D7A5A">${seaDate}</td>
-    <td><button class="btn-restock" data-pid="${x.id}" data-img="${(x.image||'').replace(/"/g,'&quot;')}" data-title="${x.title.replace(/"/g,'&quot;')}" onclick="quickRestockBtn(this)">
-      <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
-      + Restock
-    </button></td>
-  </tr>`;
-  }).join('')}</tbody></table></div>`;
+      <div class="rq-body" id="rq-body-${i}">
+        <div class="rq-grid">
+          <div class="rq-cell">
+            <div class="rq-cell-label">Units in stock</div>
+            <div class="rq-cell-value">${x.qty}</div>
+          </div>
+          <div class="rq-cell">
+            <div class="rq-cell-label">Sold 90d</div>
+            <div class="rq-cell-value">${x.sold90}</div>
+          </div>
+          <div class="rq-cell">
+            <div class="rq-cell-label">✈ Air arrival</div>
+            <div class="rq-cell-value air">${airDate}</div>
+          </div>
+          <div class="rq-cell">
+            <div class="rq-cell-label">⛵ Sea arrival</div>
+            <div class="rq-cell-value sea">${seaDate}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:11px;color:rgba(26,26,24,.45);font-family:'DM Mono',monospace">Suggested order: ${suggestQty} units</span>
+          <button class="btn-restock" data-pid="${x.id}" data-img="${(x.image||'').replace(/"/g,'&quot;')}" data-title="${x.title.replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
+            <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
+            + Restock
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function toggleRQ(bodyId, arrId){
+  const body=document.getElementById(bodyId);
+  const arr=document.getElementById(arrId);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(arr)arr.classList.toggle('open',open);
 }
 
 function renderPopular(p){
