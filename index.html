@@ -628,9 +628,9 @@ td:first-child{padding-left:16px;}
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
         Thresholds
       </button>
-      <button class="nav-btn" onclick="setView('setup',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2zM2 7h8v2H2zM2 11h5v2H2z"/></svg>
-        Tag Setup Guide
+      <button class="nav-btn" onclick="setView('email-settings',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1zm0 0l6 5 6-5"/></svg>
+        Email
       </button>
     </div>
   </div>
@@ -929,29 +929,67 @@ td:first-child{padding-left:16px;}
     </div>
 
     <!-- TAG SETUP -->
-    <div class="view" id="view-setup">
+    <div class="view" id="view-email-settings">
       <div class="page-hdr">
         <div>
-          <div class="page-title">TAG <em>SETUP</em></div>
-          <div class="page-sub">Add these tags in Shopify so each product appears in the correct warehouse view</div>
+          <div class="page-title">EMAIL <em>SETTINGS</em></div>
+          <div class="page-sub">Configure default email addresses used across the app</div>
         </div>
       </div>
-      <div class="setup-card">
-        <div class="setup-title">Your Tag System</div>
-        <div class="tag-row"><span class="tag-code">warehouse:us</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in US warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
-        <div class="tag-row"><span class="tag-code">warehouse:uk</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in UK warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
-        <div class="tag-row"><span class="tag-code">warehouse:au</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Stocked in AU warehouse</span><span class="badge b-info"><div class="bdot"></div>Active</span></div>
-        <div class="tag-row"><span class="tag-code">dropship</span><span style="font-size:12px;color:rgba(26,26,24,.55);flex:1">Supplier ships direct — hidden from all views</span><span class="badge b-crit"><div class="bdot"></div>Excluded</span></div>
+
+      <!-- SUPPLIER EMAIL -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title">DEFAULT SUPPLIER EMAIL</div>
+            <div class="card-sub">Pre-filled in every new restock order — save time so you don't type it each time</div>
+          </div>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.5);display:block;margin-bottom:6px">Supplier Email Address</label>
+            <input type="email" id="defaultSupplierEmail" placeholder="supplier@company.com"
+              style="width:100%;max-width:400px;padding:8px 12px;font-size:13px;border:1.5px solid var(--border2);border-radius:7px;outline:none;font-family:'Inter',sans-serif;background:#fff;color:var(--ink);transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"
+              oninput="emailSettingsDirty()" onkeydown="if(event.key==='Enter')saveEmailSettings()">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.5);display:block;margin-bottom:6px">Supplier / Company Name</label>
+            <input type="text" id="defaultSupplierName" placeholder="e.g. Shenzhen Tech Co."
+              style="width:100%;max-width:400px;padding:8px 12px;font-size:13px;border:1.5px solid var(--border2);border-radius:7px;outline:none;font-family:'Inter',sans-serif;background:#fff;color:var(--ink);transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"
+              oninput="emailSettingsDirty()" onkeydown="if(event.key==='Enter')saveEmailSettings()">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-sol gold" id="saveEmailSettingsBtn" onclick="saveEmailSettings()" style="opacity:.4;pointer-events:none">Save</button>
+            <span id="emailSettingsSaved" style="font-size:11px;color:var(--green);display:none">✓ Saved</span>
+          </div>
+        </div>
       </div>
-      <div class="setup-card">
-        <div class="setup-title">How to Bulk-Tag in Shopify</div>
-        <div class="step-row"><div class="step-num">1</div><div class="step-text">Go to <strong>Shopify Admin → Products</strong>. Filter to your US warehouse products and select all with the checkbox.</div></div>
-        <div class="step-row"><div class="step-num">2</div><div class="step-text">Click <strong>Actions → Add tags</strong>. Type <span class="inline-code">warehouse:us</span> and save. Repeat for UK with <span class="inline-code">warehouse:uk</span> and AU with <span class="inline-code">warehouse:au</span>.</div></div>
-        <div class="step-row"><div class="step-num">3</div><div class="step-text">For dropship-only products add tag <span class="inline-code">dropship</span>. These are automatically hidden from every warehouse view.</div></div>
-      </div>
-      <div class="setup-card" style="margin-bottom:0">
-        <div class="setup-title">Adding a New Market Later</div>
-        <div style="font-size:12px;color:rgba(26,26,24,.55);line-height:1.6">Tag products with <span class="inline-code">warehouse:xx</span> in Shopify, then update this app to add a new tab. No other code changes needed.</div>
+
+      <!-- FROM EMAIL (moved from Email Alerts) -->
+      <div class="card">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title">SENDING EMAIL ADDRESS</div>
+            <div class="card-sub">The "From" address used for stock alert emails and supplier purchase orders</div>
+          </div>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.5);display:block;margin-bottom:6px">From Name</label>
+            <input class="field-input" type="text" id="fromName" value="FoldifyCase Warehouse" placeholder="FoldifyCase Warehouse"
+              style="max-width:400px" oninput="saveRecipients()">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.5);display:block;margin-bottom:6px">From Email</label>
+            <input class="field-input" type="email" id="fromEmail" placeholder="warehouse@foldifycase.com.au"
+              style="max-width:400px" oninput="saveRecipients()">
+          </div>
+          <div style="font-size:11px;color:rgba(26,26,24,.4);line-height:1.5">
+            Must be a verified sending domain in your Resend account. Currently verified: <strong>foldifycase.com.au</strong>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1487,8 +1525,11 @@ function openRestock(){
   selectShip('air');
   document.getElementById('restockOrderDate').value=todayStr();
   document.getElementById('restockNotes').value='';
-  document.getElementById('supplierEmail').value='';
-  document.getElementById('supplierName').value='';
+  // Pre-fill from saved default supplier email
+  const defEmail=localStorage.getItem('fc_default_supplier_email')||'';
+  const defName=localStorage.getItem('fc_default_supplier_name')||'';
+  document.getElementById('supplierEmail').value=defEmail;
+  document.getElementById('supplierName').value=defName;
   document.getElementById('orderSettings').style.display='none';
   document.getElementById('orderDivider').style.display='none';
   updateModalETA();
@@ -1719,6 +1760,7 @@ async function confirmRestock(){
     sent:false
   };
   poOrders.unshift(order);
+  savePOOrders();
 
   if(supplierEmail){
     await sendToSupplier(order);
@@ -1877,6 +1919,7 @@ async function sendToSupplier(order){
     try{result=JSON.parse(rawText);}catch(e){result={raw:rawText};}
     if(r.ok&&result.success){
       order.sent=true;
+      savePOOrders();
       showToast('Supplier email sent to '+order.supplierEmail,'ok');
     } else {
       order.sent=false;
@@ -1995,6 +2038,7 @@ async function submitDelivery(){
     btn.textContent='Done ✓';btn.style.background='var(--green)';
     order.delivered=true;
     order.deliveredDate=new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+    savePOOrders();
     renderPOLog();renderAll();
     showToast('Delivery confirmed — Shopify updated','ok');
     setTimeout(()=>closeDeliveryModal(),1800);
@@ -2075,6 +2119,7 @@ function deletePOOrder(orderId){
   const label=order.delivered?'delivered order':'order';
   if(!confirm(`Delete ${label} ${orderId}?\n\nThis cannot be undone.`))return;
   poOrders=poOrders.filter(o=>o.id!==orderId);
+  savePOOrders();
   renderPOLog();
   showToast('Order '+orderId+' deleted','ok');
 }
@@ -2086,6 +2131,7 @@ function saveTracking(orderId){
   const val=(input?.value||'').trim();
   if(!val){showToast('Enter a tracking number first','err');return;}
   order.tracking=val;
+  savePOOrders();
   renderPOLog();
   showToast('Tracking number saved','ok');
 }
@@ -2096,10 +2142,96 @@ function editTracking(orderId){
   const val=prompt('Update tracking number:',order.tracking||'');
   if(val===null)return;
   order.tracking=val.trim()||null;
+  savePOOrders();
   renderPOLog();
   showToast(order.tracking?'Tracking number updated':'Tracking number removed','ok');
 }
 
+
+
+
+// ── PO ORDER PERSISTENCE — Vercel Blob (shared across all devices) ──────────
+const PO_STORAGE_KEY = 'fc_po_orders'; // localStorage fallback key
+
+// Save to Blob (shared) + localStorage (instant fallback)
+async 
+// ── EMAIL SETTINGS ─────────────────────────────────────────────────────────
+function emailSettingsDirty(){
+  const btn=document.getElementById('saveEmailSettingsBtn');
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+}
+
+function saveEmailSettings(){
+  const email=(document.getElementById('defaultSupplierEmail')?.value||'').trim();
+  const name=(document.getElementById('defaultSupplierName')?.value||'').trim();
+  try{
+    localStorage.setItem('fc_default_supplier_email', email);
+    localStorage.setItem('fc_default_supplier_name', name);
+  }catch(e){}
+  const btn=document.getElementById('saveEmailSettingsBtn');
+  const saved=document.getElementById('emailSettingsSaved');
+  if(btn){btn.style.opacity='.4';btn.style.pointerEvents='none';}
+  if(saved){saved.style.display='inline';setTimeout(()=>saved.style.display='none',2500);}
+  showToast('Email settings saved','ok');
+}
+
+function loadEmailSettings(){
+  try{
+    const email=localStorage.getItem('fc_default_supplier_email')||'';
+    const name=localStorage.getItem('fc_default_supplier_name')||'';
+    const emailEl=document.getElementById('defaultSupplierEmail');
+    const nameEl=document.getElementById('defaultSupplierName');
+    if(emailEl&&email)emailEl.value=email;
+    if(nameEl&&name)nameEl.value=name;
+  }catch(e){}
+}
+
+async function savePOOrders(){
+  // Always save to localStorage immediately as fallback
+  try{localStorage.setItem(PO_STORAGE_KEY, JSON.stringify(poOrders));}catch(e){}
+
+  // Save to Blob so all team members see the same data
+  try{
+    const r=await fetch(`${PROXY}?service=blob&action=save_po`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orders:poOrders})
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Blob save failed');
+    console.log('[PO] Saved',poOrders.length,'order(s) to Blob');
+  }catch(e){
+    console.warn('[PO] Blob save failed, localStorage backup kept:',e.message);
+  }
+}
+
+// Load from Blob first, fall back to localStorage
+async function loadPOOrders(){
+  try{
+    const r=await fetch(`${PROXY}?service=blob&action=load_po`);
+    const d=await r.json();
+    if(r.ok&&Array.isArray(d.orders)){
+      poOrders=d.orders;
+      console.log('[PO] Loaded',poOrders.length,'order(s) from Blob');
+      // Keep localStorage in sync
+      try{localStorage.setItem(PO_STORAGE_KEY,JSON.stringify(poOrders));}catch(e){}
+      return;
+    }
+  }catch(e){
+    console.warn('[PO] Blob load failed, trying localStorage:',e.message);
+  }
+  // Fallback to localStorage
+  try{
+    const raw=localStorage.getItem(PO_STORAGE_KEY);
+    if(raw){
+      const parsed=JSON.parse(raw);
+      if(Array.isArray(parsed)){
+        poOrders=parsed;
+        console.log('[PO] Loaded',poOrders.length,'order(s) from localStorage fallback');
+      }
+    }
+  }catch(e){console.warn('[PO] localStorage load failed:',e);}
+}
 
 
 // ── QUICK RESTOCK CART ─────────────────────────────────────────────────────
@@ -2842,6 +2974,15 @@ function initETA(){
   const el=document.getElementById('etaOrderDate');
   if(el&&!el.value)el.value=`${yyyy}-${mm}-${dd}`;
   calcETA();
+  loadEmailSettings();
+  // Restore PO order history from Blob (shared across devices)
+  // loadPOOrders is async — call without await here, it renders when ready
+  loadPOOrders().then(()=>{
+    if(poOrders.length)renderPOLog();
+  }).catch(()=>{
+    if(poOrders.length)renderPOLog();
+  });
+
   // Restore saved settings from localStorage
   try{
     const saved=localStorage.getItem('fc_recipients');
