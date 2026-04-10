@@ -293,6 +293,7 @@ td:first-child{padding-left:16px;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,24,.45);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:#fff;border-radius:14px;width:560px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1.5px solid var(--border);}
+.modal-box{background:#fff;border-radius:12px;box-shadow:0 8px 40px rgba(26,26,24,.22);display:flex;flex-direction:column;overflow:hidden;max-height:90vh;}
 .modal-hdr{padding:14px 18px;border-bottom:1px solid var(--border);background:#EAE7D8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .modal-title{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);}
 .modal-close{width:26px;height:26px;border-radius:6px;background:transparent;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(26,26,24,.5);line-height:1;}
@@ -512,6 +513,20 @@ td:first-child{padding-left:16px;}
 .t-cooling .trend-pct,.t-cooling .trend-arrow{color:#E65100;}
 .t-fading .trend-pct,.t-fading .trend-arrow{color:#6A1B9A;}
 .t-new .trend-pct,.t-new .trend-arrow{color:#1565C0;}
+
+
+/* TRACKING NUMBER in PO */
+.po-tracking{display:flex;align-items:center;gap:6px;padding:6px 14px;border-top:1px solid var(--border);background:#fafaf8;}
+.po-tracking-label{font-size:10px;color:rgba(26,26,24,.4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+.po-tracking-input{flex:1;padding:4px 8px;font-size:11px;font-family:"DM Mono",monospace;border:1.5px solid var(--border2);border-radius:5px;outline:none;background:#fff;color:var(--ink);transition:border-color .15s;}
+.po-tracking-input:focus{border-color:var(--gold);}
+.po-tracking-val{font-family:"DM Mono",monospace;font-size:11px;font-weight:600;color:#2D5FA6;flex:1;}
+.po-tracking-save{padding:4px 10px;font-size:10px;font-weight:600;font-family:"Inter",sans-serif;border:1.5px solid var(--gold);border-radius:5px;background:rgba(200,169,110,.1);color:var(--gold-d);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.po-tracking-save:hover{background:var(--gold);color:#fff;}
+
+
+.po-group-delete{width:22px;height:22px;border:none;background:transparent;cursor:pointer;color:rgba(26,26,24,.2);font-size:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0;padding:0;margin-left:2px;}
+.po-group-delete:hover{background:rgba(201,64,64,.1);color:var(--red);}
 
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
@@ -2003,6 +2018,26 @@ function renderPOLog(){
     const deliverBtn=o.delivered
       ?`<span class="po-group-delivered">✓ Delivered ${o.deliveredDate}</span>`
       :`<button class="po-group-deliver" onclick="confirmDelivery('${o.id}')">📦 Confirm Delivery</button>`;
+
+    // Tracking number row
+    const trackingRow=o.delivered
+      ?`<div class="po-tracking">
+          <span class="po-tracking-label">📍 Tracking</span>
+          ${o.tracking
+            ?`<span class="po-tracking-val">${o.tracking}</span>
+               <button class="po-tracking-save" onclick="editTracking('${o.id}')">Edit</button>`
+            :`<span style="font-size:11px;color:rgba(26,26,24,.3);flex:1">No tracking number</span>
+               <button class="po-tracking-save" onclick="editTracking('${o.id}')">+ Add</button>`}
+        </div>`
+      :`<div class="po-tracking">
+          <span class="po-tracking-label">📍 Tracking</span>
+          ${o.tracking
+            ?`<span class="po-tracking-val">${o.tracking}</span>
+               <button class="po-tracking-save" onclick="editTracking('${o.id}')">Edit</button>`
+            :`<input type="text" class="po-tracking-input" id="track-${o.id}" placeholder="Enter tracking number…" value="${o.tracking||''}" onkeydown="if(event.key==='Enter')saveTracking('${o.id}')">
+               <button class="po-tracking-save" onclick="saveTracking('${o.id}')">Save</button>`}
+        </div>`;
+
     const lines=o.lines.map(l=>{
       const img=l.image?`<img src="${l.image}" class="po-line-img" onerror="this.style.display='none'">`:'<div class="po-line-img-ph"></div>';
       return`<div class="po-line">
@@ -2014,6 +2049,7 @@ function renderPOLog(){
         <div class="po-line-qty">×${l.qty}</div>
       </div>`;
     }).join('');
+
     return`<div class="po-group">
       <div class="po-group-hdr">
         <div style="flex:1;min-width:0">
@@ -2024,10 +2060,44 @@ function renderPOLog(){
         <div class="po-group-eta ${o.ship}" style="margin:0 8px">${o.eta}</div>
         ${sendBtn}
         ${deliverBtn}
+        <button class="po-group-delete" onclick="deletePOOrder('${o.id}')" title="Delete this order">×</button>
       </div>
+      ${trackingRow}
       ${lines}
     </div>`;
   }).join('');
+}
+
+
+function deletePOOrder(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+  const label=order.delivered?'delivered order':'order';
+  if(!confirm(`Delete ${label} ${orderId}?\n\nThis cannot be undone.`))return;
+  poOrders=poOrders.filter(o=>o.id!==orderId);
+  renderPOLog();
+  showToast('Order '+orderId+' deleted','ok');
+}
+
+function saveTracking(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+  const input=document.getElementById('track-'+orderId);
+  const val=(input?.value||'').trim();
+  if(!val){showToast('Enter a tracking number first','err');return;}
+  order.tracking=val;
+  renderPOLog();
+  showToast('Tracking number saved','ok');
+}
+
+function editTracking(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+  const val=prompt('Update tracking number:',order.tracking||'');
+  if(val===null)return;
+  order.tracking=val.trim()||null;
+  renderPOLog();
+  showToast(order.tracking?'Tracking number updated':'Tracking number removed','ok');
 }
 
 
