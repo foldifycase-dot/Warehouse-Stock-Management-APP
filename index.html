@@ -837,11 +837,8 @@ td:first-child{padding-left:16px;}
           <div class="email-tag-wrap" id="emailTagWrap" onclick="document.getElementById('emailTagInput').focus()">
             <input type="text" class="email-tag-input" id="emailTagInput" placeholder="name@company.com" onkeydown="handleEmailKey(event)">
           </div>
-          <div class="field-lbl">From name</div>
-          <input class="field-input" type="text" id="fromName" value="FoldifyCase Warehouse" placeholder="FoldifyCase Warehouse">
-          <div class="field-lbl">From email <span style="font-size:10px;color:rgba(26,26,24,.4)">(must be verified in Resend)</span></div>
-          <input class="field-input" type="email" id="fromEmail" placeholder="alerts@yourdomain.com">
           <button class="btn-sol" style="width:100%" onclick="saveRecipients()">Save Recipients</button>
+          <div style="font-size:11px;color:rgba(26,26,24,.4);margin-top:8px">From name &amp; email can be configured in Settings → Email</div>
           <div id="recipSaved" style="display:none;font-size:11px;color:var(--green);margin-top:8px;font-weight:500">✓ Recipients saved</div>
         </div>
 
@@ -967,7 +964,29 @@ td:first-child{padding-left:16px;}
         </div>
       </div>
 
-      <!-- FROM EMAIL (moved from Email Alerts) -->
+      <!-- US WAREHOUSE EMAIL -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title">US WAREHOUSE EMAIL</div>
+            <div class="card-sub">Email address of the US warehouse team — notified on delivery confirmations and stock alerts</div>
+          </div>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.5);display:block;margin-bottom:6px">US Warehouse Email</label>
+            <input type="email" id="usWarehouseEmail" placeholder="us-warehouse@foldifycase.com"
+              style="width:100%;max-width:400px;padding:8px 12px;font-size:13px;border:1.5px solid var(--border2);border-radius:7px;outline:none;font-family:'Inter',sans-serif;background:#fff;color:var(--ink);transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"
+              oninput="emailSettingsDirty()" onkeydown="if(event.key==='Enter')saveEmailSettings()">
+          </div>
+          <div style="font-size:11px;color:rgba(26,26,24,.4);line-height:1.5">
+            Used as the default notification email when confirming deliveries to the US warehouse.
+          </div>
+        </div>
+      </div>
+
+      <!-- FROM EMAIL -->
       <div class="card">
         <div class="card-hdr">
           <div>
@@ -2164,9 +2183,11 @@ function emailSettingsDirty(){
 function saveEmailSettings(){
   const email=(document.getElementById('defaultSupplierEmail')?.value||'').trim();
   const name=(document.getElementById('defaultSupplierName')?.value||'').trim();
+  const usEmail=(document.getElementById('usWarehouseEmail')?.value||'').trim();
   try{
     localStorage.setItem('fc_default_supplier_email', email);
     localStorage.setItem('fc_default_supplier_name', name);
+    if(usEmail)localStorage.setItem('fc_delivery_notify', usEmail);
   }catch(e){}
   const btn=document.getElementById('saveEmailSettingsBtn');
   const saved=document.getElementById('emailSettingsSaved');
@@ -2179,10 +2200,13 @@ function loadEmailSettings(){
   try{
     const email=localStorage.getItem('fc_default_supplier_email')||'';
     const name=localStorage.getItem('fc_default_supplier_name')||'';
+    const usEmail=localStorage.getItem('fc_delivery_notify')||'';
     const emailEl=document.getElementById('defaultSupplierEmail');
     const nameEl=document.getElementById('defaultSupplierName');
+    const usEl=document.getElementById('usWarehouseEmail');
     if(emailEl&&email)emailEl.value=email;
     if(nameEl&&name)nameEl.value=name;
+    if(usEl&&usEmail)usEl.value=usEmail;
   }catch(e){}
 }
 
