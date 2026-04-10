@@ -475,6 +475,16 @@ td:first-child{padding-left:16px;}
 .rq-cell-value.air{color:#2D5FA6;}
 .rq-cell-value.sea{color:#3D7A5A;}
 
+
+/* EDITABLE QTY in variant rows */
+.qty-edit-wrap{display:inline-flex;align-items:center;gap:4px;}
+.qty-edit-input{width:52px;padding:3px 6px;font-family:"DM Mono",monospace;font-weight:700;font-size:12px;border:1.5px solid var(--border2);border-radius:5px;text-align:center;background:#fff;color:var(--ink);outline:none;transition:border-color .15s;}
+.qty-edit-input:focus{border-color:var(--gold);}
+.qty-save-btn{padding:3px 8px;font-size:10px;font-weight:600;font-family:"Inter",sans-serif;border:1.5px solid var(--green);border-radius:5px;background:rgba(61,122,90,.08);color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.qty-save-btn:hover{background:var(--green);color:#fff;}
+.qty-save-btn:disabled{opacity:.4;cursor:not-allowed;}
+.qty-saving{font-size:10px;color:rgba(26,26,24,.4);font-style:italic;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -727,7 +737,19 @@ td:first-child{padding-left:16px;}
         </div>
       </div>
 
-      <div class="card"><div id="reorderTable"><div class="empty-state"><div class="spinner"></div></div></div></div>
+      <!-- Collapsible reorder list -->
+      <div class="card" style="overflow:visible">
+        <div class="card-hdr" onclick="toggleReorderList()" style="cursor:pointer;user-select:none">
+          <div>
+            <div class="card-title">PRODUCTS TO REORDER <span id="reorderCount" style="font-size:10px;background:rgba(26,26,24,.08);padding:1px 7px;border-radius:10px;font-weight:400;letter-spacing:0;text-transform:none;margin-left:6px">—</span></div>
+            <div class="card-sub">Click to show / hide the reorder list</div>
+          </div>
+          <span id="reorderArrow" style="font-size:11px;color:rgba(26,26,24,.35);transition:transform .18s;display:inline-block">▶</span>
+        </div>
+        <div id="reorderTableWrap" style="display:none">
+          <div id="reorderTable"><div class="empty-state"><div class="spinner"></div></div></div>
+        </div>
+      </div>
 
       <!-- PURCHASE ORDER LOG -->
       <div class="page-hdr" style="margin-top:16px">
@@ -2176,6 +2198,77 @@ function checkoutCart(){
 }
 
 
+
+async function saveQty(input){
+  const newQty=parseInt(input.value);
+  const origQty=parseInt(input.dataset.orig);
+  const iid=input.dataset.iid;
+  const locId=input.dataset.loc;
+
+  if(isNaN(newQty)){showToast('Invalid quantity','err');return;}
+  if(newQty===origQty){showToast('No change','ok');return;}
+  if(!iid||!locId){
+    showToast('Location data missing — re-sync first','err');
+    return;
+  }
+
+  const btn=input.nextElementSibling;
+  btn.disabled=true;
+  btn.textContent='Saving…';
+  input.style.borderColor='var(--gold)';
+
+  try{
+    const r=await fetch(`${PROXY}?service=shopify&action=set_inventory`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        inventory_item_id:parseInt(iid),
+        location_id:parseInt(locId),
+        available:newQty
+      })
+    });
+    const d=await r.json();
+    if(r.ok&&d.success){
+      input.dataset.orig=newQty;
+      input.style.borderColor='var(--green)';
+      btn.textContent='Saved ✓';
+      btn.style.background='var(--green)';
+      btn.style.color='#fff';
+      showToast('Inventory updated in Shopify','ok');
+      // Update local data
+      allProducts.forEach(p=>{
+        (p.variantData||[]).forEach(v=>{
+          if(String(v.inventoryItemId)===String(iid)||String(v.id)===String(iid)){
+            v.qty=newQty;
+            v.status=status(newQty);
+          }
+        });
+      });
+      setTimeout(()=>{
+        input.style.borderColor='';
+        btn.textContent='Save';
+        btn.style.background='';
+        btn.style.color='';
+        btn.disabled=true;
+        renderAll();
+      },2000);
+    } else {
+      throw new Error(d.error||d.detail||'Shopify rejected the update');
+    }
+  }catch(e){
+    input.style.borderColor='var(--red)';
+    btn.textContent='Error';
+    btn.style.background='';
+    btn.disabled=false;
+    showToast('Update failed: '+e.message,'err');
+    console.error('[saveQty]',e);
+    // Check if it's a permissions error
+    if(e.message.includes('write_inventory')||e.message.includes('permission')||e.message.includes('scope')){
+      alert('Missing permission: your Shopify API token needs the write_inventory scope.\n\nGo to Shopify Admin → Settings → Apps → Develop apps → your app → API credentials → add write_inventory scope → reinstall.');
+    }
+  }
+}
+
 async function startLoad(){
   const dot=document.getElementById('syncDot');
   dot.className='dot-warn';
@@ -2493,10 +2586,20 @@ function tblHTML(prods,showWh,prefix){
       const vfc=v.status==='critical'?'fill-crit':v.status==='low'?'fill-low':'fill-ok';
       const vpct=Math.round((v.qty/Math.max(mx,1))*100);
       const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:`<div class="var-img-ph"></div>`;
+      const iid=v.inventoryItemId||v.id;
+      const locId=locationMap[activeWarehouse]||(Object.values(locationMap)[0]||'');
       return`<tr class="variant-row">
         <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
         ${showWh?'<td></td>':''}
-        <td><span class="variant-qty">${v.qty}</span></td>
+        <td>
+          <div class="qty-edit-wrap">
+            <input type="number" class="qty-edit-input" value="${v.qty}"
+              data-iid="${iid}" data-loc="${locId}" data-orig="${v.qty}"
+              onkeydown="if(event.key==='Enter')saveQty(this)"
+              oninput="this.nextElementSibling.disabled=false">
+            <button class="qty-save-btn" disabled onclick="saveQty(this.previousElementSibling)" title="Save to Shopify">Save</button>
+          </div>
+        </td>
         <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
         <td></td>
         <td><button class="btn-restock" data-pid="${p.id}" data-vid="${v.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-vtitle="${v.title.replace(/"/g,'&quot;')}" data-img="${(v.image||p.image||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
@@ -2602,6 +2705,8 @@ function calcETA(){
 
 function renderReorder(p){
   const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>a.qty-b.qty);
+  const countEl=document.getElementById('reorderCount');
+  if(countEl)countEl.textContent=list.length?list.length+' product'+(list.length!==1?'s':''):'None';
   if(!list.length){document.getElementById('reorderTable').innerHTML='<div class="empty-state" style="color:var(--green)">✓ No products need reordering right now</div>';return;}
   const {airDate,seaDate}=getETADates();
   document.getElementById('reorderTable').innerHTML=`<div class="rq-list">${list.map((x,i)=>{
@@ -2657,6 +2762,16 @@ function renderReorder(p){
       </div>
     </div>`;
   }).join('')}</div>`;
+}
+
+
+function toggleReorderList(){
+  const wrap=document.getElementById('reorderTableWrap');
+  const arrow=document.getElementById('reorderArrow');
+  if(!wrap)return;
+  const open=wrap.style.display==='none';
+  wrap.style.display=open?'block':'none';
+  if(arrow)arrow.style.transform=open?'rotate(90deg)':'';
 }
 
 function toggleRQ(bodyId, arrId){
