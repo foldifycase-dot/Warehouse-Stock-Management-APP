@@ -3,7 +3,7 @@ const TOKEN = process.env.SHOPIFY_TOKEN;
 const RESEND_KEY = process.env.RESEND_API_KEY;
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const API_VERSION = '2024-01';
-const PO_BLOB_KEY = '__warehouse-restock-information__/History of restock/po_orders.json';
+const PO_BLOB_KEY = 'History of restock/po_orders.json';
 
 const shopifyHeaders = {
   'X-Shopify-Access-Token': TOKEN,
