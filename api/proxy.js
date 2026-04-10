@@ -199,7 +199,7 @@ export default async function handler(req, res) {
         });
         if (!r.ok) {
           const err = await r.text();
-          console.error('[Blob save_po] Error:', r.status, err);
+          console.error('[save_po] Write failed:', r.status, err);
           return res.status(r.status).json({ error: 'Blob write failed', detail: err });
         }
         const d = await r.json();
@@ -209,26 +209,27 @@ export default async function handler(req, res) {
       if (action === 'load_po') {
         if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
 
-        // List blobs to find the po_orders.json URL (public store needs listing to get URL)
-        const listRes = await fetch(
-          `https://blob.vercel-storage.com?prefix=${encodeURIComponent(PO_BLOB_KEY)}&limit=1`,
-          { headers: { 'Authorization': `Bearer ${BLOB_TOKEN}` } }
-        );
-        if (!listRes.ok) {
-          const err = await listRes.text();
-          return res.status(listRes.status).json({ error: 'Blob list failed', detail: err });
-        }
-        const listData = await listRes.json();
-        const blobs = listData.blobs || [];
+        // Fetch directly using known public store URL + file path
+        const BLOB_BASE = 'https://srtpdbjltmzvyywy.public.blob.vercel-storage.com';
+        const fileUrl = `${BLOB_BASE}/${PO_BLOB_KEY.replace(/ /g, '%20')}`;
+        console.log('[load_po] Fetching:', fileUrl);
 
-        // No file yet — return empty array (first run)
-        if (!blobs.length) return res.status(200).json({ orders: [] });
-
-        // Fetch the actual file via its public URL (no auth needed for public store)
-        const fileUrl = blobs[0].url;
         const r = await fetch(fileUrl + '?t=' + Date.now()); // cache-bust
-        if (!r.ok) return res.status(200).json({ orders: [] });
+        console.log('[load_po] Response status:', r.status);
+
+        // 404 = file doesn't exist yet (no orders placed)
+        if (r.status === 404) {
+          console.log('[load_po] No orders file yet — returning empty array');
+          return res.status(200).json({ orders: [] });
+        }
+        if (!r.ok) {
+          const err = await r.text();
+          console.error('[load_po] Fetch failed:', r.status, err);
+          return res.status(200).json({ orders: [], error: 'fetch failed: ' + r.status });
+        }
+
         const orders = await r.json();
+        console.log('[load_po] Loaded', Array.isArray(orders) ? orders.length : '?', 'orders');
         return res.status(200).json({ orders: Array.isArray(orders) ? orders : [] });
       }
 
