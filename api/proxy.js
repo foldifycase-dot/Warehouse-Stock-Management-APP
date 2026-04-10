@@ -1,7 +1,9 @@
 const STORE = process.env.SHOPIFY_STORE;
 const TOKEN = process.env.SHOPIFY_TOKEN;
 const RESEND_KEY = process.env.RESEND_API_KEY;
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const API_VERSION = '2024-01';
+const PO_BLOB_KEY = '__warehouse-restock-information__/History of restock/po_orders.json';
 
 const shopifyHeaders = {
   'X-Shopify-Access-Token': TOKEN,
@@ -173,6 +175,64 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, id: result.id });
+    }
+
+    // ── BLOB: save/load PO order history ────────────────────────────────────
+    if (service === 'blob') {
+
+      if (action === 'save_po') {
+        if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
+        const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        const { orders } = body;
+        if (!Array.isArray(orders)) return res.status(400).json({ error: 'orders array required' });
+        if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
+
+        // PUT JSON to Vercel Blob
+        const r = await fetch(`https://blob.vercel-storage.com/${PO_BLOB_KEY}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${BLOB_TOKEN}`,
+            'Content-Type': 'application/json',
+            'x-content-type': 'application/json',
+          },
+          body: JSON.stringify(orders),
+        });
+        if (!r.ok) {
+          const err = await r.text();
+          console.error('[Blob save_po] Error:', r.status, err);
+          return res.status(r.status).json({ error: 'Blob write failed', detail: err });
+        }
+        const d = await r.json();
+        return res.status(200).json({ success: true, url: d.url });
+      }
+
+      if (action === 'load_po') {
+        if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
+
+        // List blobs to find the po_orders.json URL (public store needs listing to get URL)
+        const listRes = await fetch(
+          `https://blob.vercel-storage.com?prefix=${encodeURIComponent(PO_BLOB_KEY)}&limit=1`,
+          { headers: { 'Authorization': `Bearer ${BLOB_TOKEN}` } }
+        );
+        if (!listRes.ok) {
+          const err = await listRes.text();
+          return res.status(listRes.status).json({ error: 'Blob list failed', detail: err });
+        }
+        const listData = await listRes.json();
+        const blobs = listData.blobs || [];
+
+        // No file yet — return empty array (first run)
+        if (!blobs.length) return res.status(200).json({ orders: [] });
+
+        // Fetch the actual file via its public URL (no auth needed for public store)
+        const fileUrl = blobs[0].url;
+        const r = await fetch(fileUrl + '?t=' + Date.now()); // cache-bust
+        if (!r.ok) return res.status(200).json({ orders: [] });
+        const orders = await r.json();
+        return res.status(200).json({ orders: Array.isArray(orders) ? orders : [] });
+      }
+
+      return res.status(400).json({ error: `Unknown blob action: ${action}` });
     }
 
     return res.status(400).json({ error: `Unknown service: ${service}` });
