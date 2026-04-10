@@ -486,17 +486,18 @@ td:first-child{padding-left:16px;}
 .qty-saving{font-size:10px;color:rgba(26,26,24,.4);font-style:italic;}
 
 
-/* TREND INDICATOR */
-.trend-wrap{display:flex;align-items:center;gap:6px;}
-.trend-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;}
-.trend-hot{background:#FEE9E7;color:#C0392B;}
-.trend-rising{background:#E8F5E9;color:#2E7D32;}
-.trend-stable{background:#F5F3E9;color:#7D6608;}
-.trend-cooling{background:#FFF3E0;color:#E65100;}
-.trend-fading{background:#F3E5F5;color:#6A1B9A;}
-.trend-new{background:#E3F2FD;color:#1565C0;}
-.sparkline{display:flex;align-items:flex-end;gap:2px;height:18px;}
-.sparkline-bar{width:6px;border-radius:2px 2px 0 0;min-height:2px;transition:height .3s;}
+/* TREND INDICATOR — inline pill with arrow + % change + mini dots */
+.trend-cell{display:flex;align-items:center;gap:5px;}
+.trend-arrow{font-size:13px;line-height:1;flex-shrink:0;}
+.trend-pct{font-family:"DM Mono",monospace;font-size:11px;font-weight:700;}
+.trend-dots{display:flex;gap:2px;align-items:center;}
+.trend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.t-hot .trend-pct{color:#C0392B;} .t-hot .trend-arrow{color:#C0392B;}
+.t-rising .trend-pct{color:#2E7D32;} .t-rising .trend-arrow{color:#2E7D32;}
+.t-stable .trend-pct{color:#7D6608;} .t-stable .trend-arrow{color:#A0936B;}
+.t-cooling .trend-pct{color:#E65100;} .t-cooling .trend-arrow{color:#E65100;}
+.t-fading .trend-pct{color:#6A1B9A;} .t-fading .trend-arrow{color:#6A1B9A;}
+.t-new .trend-pct{color:#1565C0;} .t-new .trend-arrow{color:#1565C0;}
 
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
@@ -1854,1216 +1855,144 @@ async function confirmDelivery(orderId){
   const order=poOrders.find(o=>o.id===orderId);
   if(!order)return;
 
-  // Ask for the warehouse team member email to notify
-  const notifyEmail=prompt('Email address of warehouse member to notify (to update stock in Shopify):', localStorage.getItem('fc_delivery_notify')||'');
-  if(!notifyEmail||!notifyEmail.includes('@'))return;
+  // Populate modal
+  deliveryOrderId=orderId;
+  document.getElementById('deliveryModalSub').textContent='Order '+orderId+' · '+order.lines.length+' item'+(order.lines.length!==1?'s':'');
 
-  // Remember for next time
-  try{localStorage.setItem('fc_delivery_notify',notifyEmail);}catch(e){}
-
-  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
-  const deliveredDate=fmt(new Date());
-  const fromEmail=document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au';
-
-  // Build the stock update reminder email
-  const linesList=order.lines.map(l=>`
-    <tr style="border-top:1px solid #EDEAE0">
-      <td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1A1A18">${l.product}</td>
-      <td style="padding:10px 14px;font-size:12px;color:#555">${l.variant}</td>
-      <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#1A1A18;text-align:center">${l.qty}</td>
-    </tr>`).join('');
-
-  const emailHtml=`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#E8E5DB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#E8E5DB;padding:32px 0">
-<tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-
-  <tr><td style="background:#1A1A18;border-radius:12px 12px 0 0;padding:22px 32px;border-bottom:3px solid #C8A96E">
-    <div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:.08em">FOLDIFYCASE</div>
-    <div style="color:#C8A96E;font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px">Stock Update Required — ${order.id}</div>
-  </td></tr>
-
-  <tr><td style="background:#EAF3DE;border:1px solid #C5DFA8;padding:16px 32px">
-    <table cellpadding="0" cellspacing="0"><tr>
-      <td style="font-size:18px;padding-right:10px">📦</td>
-      <td>
-        <div style="font-size:13px;font-weight:700;color:#2A5C0A">Stock has arrived — please update Shopify</div>
-        <div style="font-size:12px;color:#3D7A2A;margin-top:2px">Order ${order.id} was confirmed delivered on ${deliveredDate}. Update the inventory quantities below in Shopify.</div>
-      </td>
-    </tr></table>
-  </td></tr>
-
-  <tr><td style="background:#fff;padding:20px 32px">
-    <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:12px">Items to update in Shopify</div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #EDEAE0;border-radius:8px;overflow:hidden">
-      <thead><tr style="background:#EAE7D8">
-        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left">Product</th>
-        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left">Variant</th>
-        <th style="padding:9px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:center">Qty received</th>
-      </tr></thead>
-      <tbody>${linesList}</tbody>
-    </table>
-  </td></tr>
-
-  <tr><td style="background:#F5F3E9;padding:20px 32px;text-align:center;border-top:1px solid #EDEAE0">
-    <div style="font-size:12px;color:#555;margin-bottom:14px">Go to Shopify Admin → Products → update inventory for each item above.</div>
-    <a href="https://admin.shopify.com/store/scnd9y-a1/products" style="display:inline-block;background:#1A1A18;color:#C8A96E;font-size:12px;font-weight:700;letter-spacing:.05em;padding:12px 28px;border-radius:7px;text-decoration:none">
-      → Open Shopify Inventory
-    </a>
-  </td></tr>
-
-  <tr><td style="background:#1A1A18;border-radius:0 0 12px 12px;padding:14px 32px">
-    <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="font-size:10px;color:rgba(255,255,255,.35)">FoldifyCase Warehouse · Delivery notification</td>
-      <td align="right" style="font-size:10px;color:rgba(200,169,110,.5)">${order.id} · ${deliveredDate}</td>
-    </tr></table>
-  </td></tr>
-
-</table></td></tr></table>
-</body></html>`;
-
-  try{
-    showToast('Sending delivery notification…','ok');
-    const r=await fetch(`${PROXY}?service=alert`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        to:[notifyEmail],
-        from_name:'FoldifyCase Warehouse',
-        from_email:fromEmail,
-        subject:`Action Required: Update Shopify Stock — Order ${order.id} Delivered`,
-        custom_html:emailHtml,
-        type:'delivery',warehouse:'',products:[]
-      })
-    });
-    const result=await r.json().catch(()=>({}));
-    if(r.ok&&result.success){
-      order.delivered=true;
-      order.deliveredDate=deliveredDate;
-      order.notifiedEmail=notifyEmail;
-      renderPOLog();
-      showToast(`Delivery confirmed · ${notifyEmail} notified to update Shopify`,'ok');
-    } else {
-      showToast('Email failed: '+(result.error||'Check Vercel logs'),'err');
-    }
-  }catch(e){
-    showToast('Network error: '+e.message,'err');
-  }
-}
-
-function renderPOLog(){
-  const el=document.getElementById('poLog');
-  if(!poOrders.length){
-    el.innerHTML='<div class="empty-state" style="color:rgba(26,26,24,.3)">No restock orders placed yet — click Create Restock Order to get started.</div>';
-    return;
-  }
-  el.innerHTML=poOrders.map(o=>{
-    const sendBtn=o.sent
-      ?`<span class="po-group-sent">✓ Sent to supplier</span>`
-      :`<button class="po-group-send" onclick="resendToSupplier('${o.id}')">✉ Send to supplier</button>`;
-    const deliverBtn=o.delivered
-      ?`<span class="po-group-delivered">✓ Delivered ${o.deliveredDate}</span>`
-      :`<button class="po-group-deliver" onclick="confirmDelivery('${o.id}')">📦 Confirm Delivery</button>`;
-    const lines=o.lines.map(l=>{
-      const img=l.image?`<img src="${l.image}" class="po-line-img" onerror="this.style.display='none'">`:'<div class="po-line-img-ph"></div>';
-      return`<div class="po-line">
-        ${img}
-        <div class="po-line-info">
-          <div class="po-line-product">${l.product}</div>
-          <div class="po-line-variant">${l.variant}</div>
-        </div>
-        <div class="po-line-qty">×${l.qty}</div>
-      </div>`;
-    }).join('');
-    return`<div class="po-group">
-      <div class="po-group-hdr">
-        <div style="flex:1;min-width:0">
-          <div class="po-group-id">${o.id}</div>
-          <div class="po-group-date">Ordered ${o.orderDate}${o.notes?' · '+o.notes:''}</div>
-        </div>
-        <span class="po-group-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
-        <div class="po-group-eta ${o.ship}" style="margin:0 8px">${o.eta}</div>
-        ${sendBtn}
-        ${deliverBtn}
+  // Build line items with editable qty and inventory lookup
+  const linesHtml=order.lines.map((l,i)=>{
+    const imgTag=l.image
+      ?`<img src="${l.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`
+      :'<div style="width:36px;height:36px;border-radius:5px;background:#EAE7D8;flex-shrink:0"></div>';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)" data-line="${i}">
+      ${imgTag}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.product}</div>
+        <div style="font-size:11px;color:rgba(26,26,24,.45)">${l.variant}</div>
       </div>
-      ${lines}
-    </div>`;
-  }).join('');
-}
-
-
-
-// ── QUICK RESTOCK CART ─────────────────────────────────────────────────────
-let cartItems = []; // [{productId, variantId, product, variant, image, qty}]
-let cartOpen = false;
-
-function toggleCart(){
-  cartOpen=!cartOpen;
-  document.getElementById('cartPanel').classList.toggle('open',cartOpen);
-}
-
-function quickRestockBtn(btn){
-  const pid=String(btn.dataset.pid||'');
-  const vid=String(btn.dataset.vid||'');
-  const prod=allProducts.find(p=>String(p.id)===pid);
-  if(!prod){console.warn('[Restock] Product not found:',pid,allProducts.map(p=>p.id));return;}
-
-  if(vid){
-    // Variant button — jump straight to qty step in modal
-    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===vid);
-    if(!v){console.warn('[Restock] Variant not found:',vid);return;}
-    // Open modal and pre-select product + variant
-    openRestockForVariant(prod,v);
-  } else {
-    // Product button — open modal and pre-select product, show variant grid
-    openRestockForProduct(prod);
-  }
-}
-
-function quickRestock(productId,variantId,productTitle,image,variantTitle){
-  // Legacy call — delegate to quickRestockBtn logic
-  const prod=allProducts.find(p=>String(p.id)===String(productId));
-  if(!prod)return;
-  if(variantId){
-    const v=prod.variantData&&prod.variantData.find(x=>String(x.id)===String(variantId));
-    if(v)openRestockForVariant(prod,v);
-  } else {
-    openRestockForProduct(prod);
-  }
-}
-
-function openRestockForProduct(prod){
-  // Stay on current page — open cart panel with picker
-  cartPickerState={prod,variant:null};
-  cartOpen=true;
-  document.getElementById('cartPanel').classList.add('open');
-  _renderPicker();
-}
-function openRestockForVariant(prod,v){
-  // Skip to qty step — go straight to cart picker qty
-  cartPickerState={prod,variant:String(v.id)};
-  cartOpen=true;
-  document.getElementById('cartPanel').classList.add('open');
-  _renderPicker();
-}
-function addToCart(productId, variantId, productName, variantName, image){
-  // Check if already in cart
-  const key=productId+'-'+variantId;
-  const existing=cartItems.find(i=>i.key===key);
-  if(existing){existing.qty+=50;renderCart();}
-  else{cartItems.push({key,productId,variantId,product:productName,variant:variantName,image,qty:50});}
-  renderCart();
-  // Open cart panel
-  cartOpen=true;
-  document.getElementById('cartPanel').classList.add('open');
-  showToast(variantName+' added to restock order','ok');
-}
-
-// Currently picking variant for: {prod, selectedVariant}
-let cartPickerState = null;
-
-function openCartVariantPicker(prod){
-  cartOpen=true;
-  document.getElementById('cartPanel').classList.add('open');
-  cartPickerState={prod,variant:null};
-  _renderPicker();
-}
-
-function _renderPicker(){
-  const {prod,variant}=cartPickerState;
-  const body=document.getElementById('cartBody');
-
-  if(!variant){
-    // Step 1 — choose variant
-    body.innerHTML=`<div style="padding:12px">
-      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:8px">SELECT VARIANT — ${prod.title}</div>
-      ${(prod.variantData||[]).map(v=>`
-        <div onclick="cartPickVariant('${v.id}')"
-             style="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;margin-bottom:5px;transition:all .12s"
-             onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(200,169,110,.05)'"
-             onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
-          ${v.image
-            ?`<img src="${v.image}" style="width:32px;height:32px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">`
-            :`<div style="width:32px;height:32px;border-radius:5px;background:#EAE7D8;flex-shrink:0"></div>`}
-          <span style="font-size:12px;font-weight:500;flex:1;color:var(--ink)">${v.title}</span>
-          <span style="font-size:11px;color:rgba(26,26,24,.4);font-family:'DM Mono',monospace">${v.qty} in stock</span>
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><path d="M6 3l5 5-5 5"/></svg>
-        </div>`).join('')}
-      <button onclick="cartPickerState=null;renderCart()" style="margin-top:4px;font-size:11px;color:rgba(26,26,24,.4);background:none;border:none;cursor:pointer;padding:4px 0">← Cancel</button>
-    </div>`;
-  } else {
-    // Step 2 — set quantity for chosen variant
-    const v=prod.variantData.find(x=>x.id===variant);
-    body.innerHTML=`<div style="padding:12px">
-      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:10px">SET QUANTITY</div>
-      <div style="display:flex;align-items:center;gap:9px;padding:10px;background:var(--cream);border-radius:8px;margin-bottom:14px">
-        ${v&&v.image?`<img src="${v.image}" style="width:36px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">`:`<div style="width:36px;height:36px;border-radius:5px;background:#EAE7D8"></div>`}
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--ink)">${prod.title}</div>
-          <div style="font-size:11px;color:rgba(26,26,24,.45)">${v?v.title:''} · ${v?v.qty:0} in stock</div>
+      <div style="text-align:center;min-width:70px">
+        <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:4px">Ordered</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">${l.qty}</div>
+      </div>
+      <div style="text-align:center;min-width:90px">
+        <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,26,24,.4);margin-bottom:4px">Received</div>
+        <div style="display:flex;align-items:center;gap:3px">
+          <button onclick="adjDeliveryQty(${i},-1)" style="width:24px;height:24px;border:1.5px solid var(--border2);border-radius:4px;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">−</button>
+          <input type="number" id="dqty-${i}" value="${l.qty}" min="0"
+            style="width:46px;padding:3px 4px;text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:13px;border:1.5px solid var(--border2);border-radius:5px;outline:none"
+            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
+          <button onclick="adjDeliveryQty(${i},1)" style="width:24px;height:24px;border:1.5px solid var(--border2);border-radius:4px;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">+</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <button onclick="cartPickerAdjQty(-10)" style="width:36px;height:36px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-        <input type="number" id="cartPickerQty" value="50" min="1" style="flex:1;padding:8px;text-align:center;font-size:18px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid var(--border2);border-radius:7px;outline:none;background:#fff">
-        <button onclick="cartPickerAdjQty(10)" style="width:36px;height:36px;border:1.5px solid var(--border2);border-radius:7px;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="cartPickerState.variant=null;_renderPicker()" style="flex:1;padding:9px;border:1.5px solid var(--border2);border-radius:7px;font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;background:#fff">← Back</button>
-        <button onclick="cartPickerConfirm()" style="flex:2;padding:9px;background:var(--gold);border:none;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--ink);cursor:pointer">Add to Restock Order</button>
-      </div>
-    </div>`;
-  }
-}
-
-function cartPickVariant(vid){
-  cartPickerState.variant=vid;
-  _renderPicker();
-}
-
-function cartPickerAdjQty(delta){
-  const el=document.getElementById('cartPickerQty');
-  if(el)el.value=Math.max(1,(parseInt(el.value)||0)+delta);
-}
-
-function cartPickerConfirm(){
-  const {prod,variant}=cartPickerState;
-  const v=prod.variantData.find(x=>x.id===variant);
-  if(!v)return;
-  const qty=parseInt(document.getElementById('cartPickerQty')?.value)||50;
-  const key=String(prod.id)+'-'+String(v.id);
-  const existing=cartItems.find(i=>i.key===key);
-  if(existing){existing.qty+=qty;}
-  else{cartItems.push({key,productId:String(prod.id),variantId:String(v.id),product:prod.title,variant:v.title,image:v.image||prod.image||'',qty});}
-  cartPickerState=null;
-  renderCart();
-  showToast(v.title+' ×'+qty+' added','ok');
-}
-
-function updateCartQty(key,delta){
-  const item=cartItems.find(i=>i.key===key);
-  if(!item)return;
-  item.qty=Math.max(1,item.qty+delta);
-  renderCart();
-}
-
-function removeFromCart(key){
-  cartItems=cartItems.filter(i=>i.key!==key);
-  renderCart();
-}
-
-function clearCart(){
-  cartItems=[];
-  renderCart();
-}
-
-function renderCart(){
-  const badge=document.getElementById('fabBadge');
-  const count=document.getElementById('cartCount');
-  const body=document.getElementById('cartBody');
-  const total=cartItems.length;
-  badge.textContent=total;
-  badge.classList.toggle('show',total>0);
-  count.textContent=total+' item'+(total!==1?'s':'');
-  if(!total){body.innerHTML='<div class="cart-empty">No items yet — hit + Restock on any product</div>';return;}
-  body.innerHTML=cartItems.map(item=>{
-    const img=item.image?`<img src="${item.image}" class="cart-item-img" onerror="this.style.display='none'">`:'<div class="cart-item-img-ph"></div>';
-    return`<div class="cart-item">
-      ${img}
-      <div class="cart-item-info">
-        <div class="cart-item-name">${item.product}</div>
-        <div class="cart-item-variant">${item.variant}</div>
-      </div>
-      <div class="cart-item-qty">
-        <button class="cart-qty-btn" onclick="updateCartQty('${item.key}',-10)">−</button>
-        <span class="cart-qty-num">${item.qty}</span>
-        <button class="cart-qty-btn" onclick="updateCartQty('${item.key}',10)">+</button>
-      </div>
-      <button class="cart-item-remove" onclick="removeFromCart('${item.key}')">×</button>
+      <div id="dstatus-${i}" style="width:20px;text-align:center;font-size:14px" title=""></div>
     </div>`;
   }).join('');
+
+  document.getElementById('deliveryLineItems').innerHTML=linesHtml||'<div class="empty-state">No line items found</div>';
+  document.getElementById('deliveryModalStatus').textContent='Ready to update Shopify inventory';
+  document.getElementById('deliveryConfirmBtn').disabled=false;
+  document.getElementById('deliveryConfirmBtn').textContent='✓ Confirm & Update Shopify';
+  document.getElementById('deliveryModalOverlay').style.display='flex';
 }
 
-function checkoutCart(){
-  if(!cartItems.length)return;
-  // Save lines before openRestock clears them
-  const savedLines=cartItems.map(i=>({
-    productId:i.productId,product:i.product,
-    variant:i.variant,image:i.image,qty:i.qty
-  }));
-  // Close cart
-  cartOpen=false;
-  document.getElementById('cartPanel').classList.remove('open');
-  // Open modal — this resets currentOrderLines
-  openRestock();
-  // Restore saved lines after openRestock reset
-  currentOrderLines=savedLines;
-  renderOrderLines();
-  if(currentOrderLines.length>0){
-    document.getElementById('orderSettings').style.display='block';
-    document.getElementById('orderDivider').style.display='block';
-    document.getElementById('addLineBtn').style.display='flex';
-    document.getElementById('addLinePanel').style.display='none';
-  }
-  updateConfirmBtn();
-  // Don't clear cartItems until order is actually placed
+let deliveryOrderId=null;
+
+function adjDeliveryQty(lineIdx,delta){
+  const el=document.getElementById('dqty-'+lineIdx);
+  if(el)el.value=Math.max(0,(parseInt(el.value)||0)+delta);
 }
 
-
-
-
-// ── TREND ALGORITHM ────────────────────────────────────────────────────────
-// Splits 90d into 3×30d windows and compares recent vs old velocity
-function calcTrend(productId, variantId){
-  const now=Date.now();
-  const d30=30*24*60*60*1000;
-  let p0=0,p1=0,p2=0; // recent(0-30d), mid(31-60d), old(61-90d)
-
-  salesDataAll.forEach(o=>{
-    const age=now-new Date(o.created_at).getTime();
-    if(age>90*24*60*60*1000)return;
-    (o.line_items||[]).forEach(i=>{
-      const matchProd=variantId?String(i.variant_id)===String(variantId):String(i.product_id)===String(productId);
-      if(!matchProd)return;
-      const qty=i.quantity||0;
-      if(age<=d30)p0+=qty;
-      else if(age<=2*d30)p1+=qty;
-      else p2+=qty;
-    });
-  });
-
-  const total=p0+p1+p2;
-  const mx=Math.max(p0,p1,p2,1);
-
-  // Determine trend label
-  let label,cls,icon;
-  if(total===0){
-    label='No data';cls='trend-stable';icon='—';
-  } else if(p2===0&&p0>0){
-    label='New';cls='trend-new';icon='✦';
-  } else {
-    const ratio=p0/Math.max(p2,1);
-    if(ratio>=2){label='Hot';cls='trend-hot';icon='🔥';}
-    else if(ratio>=1.2){label='Rising';cls='trend-rising';icon='↑';}
-    else if(ratio>=0.8){label='Stable';cls='trend-stable';icon='→';}
-    else if(ratio>=0.4){label='Cooling';cls='trend-cooling';icon='↓';}
-    else{label='Fading';cls='trend-fading';icon='↓↓';}
-  }
-
-  // Build mini sparkline (3 bars: old, mid, recent)
-  const bars=[p2,p1,p0].map((v,i)=>{
-    const h=Math.round((v/mx)*16)+2;
-    const colors=['rgba(26,26,24,.15)','rgba(26,26,24,.3)','#C8A96E'];
-    return`<div class="sparkline-bar" style="height:${h}px;background:${colors[i]}" title="${['61-90d','31-60d','0-30d'][i]}: ${v} sold"></div>`;
-  }).join('');
-
-  return{label,cls,icon,bars,p0,p1,p2,total};
+function closeDeliveryModal(){
+  document.getElementById('deliveryModalOverlay').style.display='none';
+  deliveryOrderId=null;
 }
 
-function trendHTML(productId, variantId){
-  const t=calcTrend(productId,variantId);
-  if(t.total===0&&t.label==='No data')return`<span style="font-size:10px;color:rgba(26,26,24,.25)">—</span>`;
-  return`<div class="trend-wrap">
-    <span class="trend-badge ${t.cls}">${t.icon} ${t.label}</span>
-    <div class="sparkline">${t.bars}</div>
-  </div>`;
-}
+async function submitDelivery(){
+  const order=poOrders.find(o=>o.id===deliveryOrderId);
+  if(!order)return;
 
-async function saveQty(input){
-  const newQty=parseInt(input.value);
-  const origQty=parseInt(input.dataset.orig);
-  const iid=input.dataset.iid;
-  const locId=input.dataset.loc;
-
-  if(isNaN(newQty)){showToast('Invalid quantity','err');return;}
-  if(newQty===origQty){showToast('No change','ok');return;}
-  if(!iid||!locId){
-    showToast('Location data missing — re-sync first','err');
-    return;
-  }
-
-  const btn=input.nextElementSibling;
+  const btn=document.getElementById('deliveryConfirmBtn');
+  const statusEl=document.getElementById('deliveryModalStatus');
   btn.disabled=true;
-  btn.textContent='Saving…';
-  input.style.borderColor='var(--gold)';
+  btn.textContent='Updating Shopify…';
 
-  try{
-    const r=await fetch(`${PROXY}?service=shopify&action=set_inventory`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        inventory_item_id:parseInt(iid),
-        location_id:parseInt(locId),
-        available:newQty
-      })
-    });
-    const d=await r.json();
-    if(r.ok&&d.success){
-      input.dataset.orig=newQty;
-      input.style.borderColor='var(--green)';
-      btn.textContent='Saved ✓';
-      btn.style.background='var(--green)';
-      btn.style.color='#fff';
-      showToast('Inventory updated in Shopify','ok');
-      // Update local data
-      allProducts.forEach(p=>{
-        (p.variantData||[]).forEach(v=>{
-          if(String(v.inventoryItemId)===String(iid)||String(v.id)===String(iid)){
-            v.qty=newQty;
-            v.status=status(newQty);
-          }
-        });
+  const results=[];
+  let allOk=true;
+
+  for(let i=0;i<order.lines.length;i++){
+    const l=order.lines[i];
+    const receivedQty=parseInt(document.getElementById('dqty-'+i)?.value)||0;
+    const statusDot=document.getElementById('dstatus-'+i);
+
+    // Find the product and variant in allProducts to get inventoryItemId and locationId
+    const prod=allProducts.find(p=>p.title===l.product||(l.productId&&String(p.id)===String(l.productId)));
+    const variant=prod&&(prod.variantData||[]).find(v=>v.title===l.variant||(l.variantId&&String(v.id)===String(l.variantId)));
+
+    if(!prod||!variant||!variant.inventoryItemId){
+      if(statusDot){statusDot.textContent='⚠';statusDot.title='Cannot find inventory item — re-sync and try again';}
+      results.push({ok:false,line:l,reason:'Inventory item not found'});
+      allOk=false;
+      continue;
+    }
+
+    const locId=locationMap[order.warehouse||activeWarehouse]||Object.values(locationMap)[0];
+    if(!locId){
+      if(statusDot){statusDot.textContent='⚠';statusDot.title='Location not found';}
+      results.push({ok:false,line:l,reason:'Location not found'});
+      allOk=false;
+      continue;
+    }
+
+    // Current qty + received qty = new total
+    const currentQty=variant.qty||0;
+    const newQty=currentQty+receivedQty;
+
+    try{
+      statusEl.textContent=`Updating ${l.variant}…`;
+      const r=await fetch(`${PROXY}?service=shopify&action=set_inventory`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          inventory_item_id:parseInt(variant.inventoryItemId),
+          location_id:parseInt(locId),
+          available:newQty
+        })
       });
-      setTimeout(()=>{
-        input.style.borderColor='';
-        btn.textContent='Save';
-        btn.style.background='';
-        btn.style.color='';
-        btn.disabled=true;
-        renderAll();
-      },2000);
-    } else {
-      throw new Error(d.error||d.detail||'Shopify rejected the update');
-    }
-  }catch(e){
-    input.style.borderColor='var(--red)';
-    btn.textContent='Error';
-    btn.style.background='';
-    btn.disabled=false;
-    showToast('Update failed: '+e.message,'err');
-    console.error('[saveQty]',e);
-    // Check if it's a permissions error
-    if(e.message.includes('write_inventory')||e.message.includes('permission')||e.message.includes('scope')){
-      alert('Missing permission: your Shopify API token needs the write_inventory scope.\n\nGo to Shopify Admin → Settings → Apps → Develop apps → your app → API credentials → add write_inventory scope → reinstall.');
+      const d=await r.json();
+      if(r.ok&&d.success){
+        if(statusDot){statusDot.textContent='✓';statusDot.style.color='var(--green)';}
+        // Update local cache
+        variant.qty=newQty;
+        variant.status=status(newQty);
+        results.push({ok:true,line:l,receivedQty,newQty});
+      } else {
+        throw new Error(d.error||'Shopify error');
+      }
+    }catch(e){
+      if(statusDot){statusDot.textContent='✗';statusDot.style.color='var(--red)';statusDot.title=e.message;}
+      results.push({ok:false,line:l,reason:e.message});
+      allOk=false;
     }
   }
-}
 
-async function startLoad(){
-  const dot=document.getElementById('syncDot');
-  dot.className='dot-warn';
-  document.getElementById('syncInfo').textContent='Syncing…';
-  document.getElementById('mainTable').innerHTML='<div class="empty-state"><div class="spinner"></div>Fetching products from Shopify…</div>';
-  try{
-    // Fetch products, orders, and locations in parallel
-    const [pr,or,lr]=await Promise.all([
-      fetch(`${PROXY}?service=shopify&action=products&limit=250`),
-      fetch(`${PROXY}?service=shopify&action=orders&days=90&limit=250`),
-      fetch(`${PROXY}?service=shopify&action=locations`)
-    ]);
-    if(!pr.ok) throw new Error('Products request failed: '+pr.status);
-    const pd=await pr.json(),od=await or.json(),ld=await lr.json();
-    if(!pd.products) throw new Error('No products in response');
+  const okCount=results.filter(r=>r.ok).length;
+  const total=results.length;
 
-    // Build location ID map — match names containing us/uk/au keywords
-    const locations=ld.locations||[];
-    locationMap={};
-    locations.forEach(loc=>{
-      const n=loc.name.toLowerCase();
-      if(n.includes('us')||n.includes('united states')||n.includes('america'))locationMap.us=loc.id;
-      if(n.includes('uk')||n.includes('united kingdom')||n.includes('britain'))locationMap.uk=loc.id;
-      if(n.includes('au')||n.includes('australia'))locationMap.au=loc.id;
-    });
-    console.log('[Locations]',locations.map(l=>l.name+':'+l.id),locationMap);
-
-    // Fetch inventory levels for all locations if we have location IDs
-    const locIds=Object.values(locationMap);
-    if(locIds.length>0){
-      const invRes=await fetch(`${PROXY}?service=shopify&action=inventory_levels&location_ids=${locIds.join(',')}`);
-      const invData=await invRes.json();
-      processInventoryLevels(invData.inventory_levels||[]);
-    }
-
-    processSales(od.orders||[]);
-    processProducts(pd.products);
-    dot.className='dot-g';
-    const t=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('syncInfo').textContent='Live · synced '+t;
-    document.getElementById('syncTime').textContent='Last sync: '+t;
-    showToast('Shopify synced successfully','ok');
-    initETA();
+  if(allOk){
+    statusEl.textContent=`✓ All ${total} items updated in Shopify!`;
+    btn.textContent='Done ✓';
+    btn.style.background='var(--green)';
+    order.delivered=true;
+    order.deliveredDate=new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+    renderPOLog();
     renderAll();
-  }catch(e){
-    dot.className='dot-err';
-    document.getElementById('syncInfo').textContent='Connection failed';
-    document.getElementById('mainTable').innerHTML=`<div class="empty-state" style="color:var(--red)">
-      Could not reach Shopify.<br>
-      <small style="color:rgba(26,26,24,.45);line-height:1.6;display:block;margin-top:6px">
-        Check that SHOPIFY_STORE, SHOPIFY_TOKEN and RESEND_API_KEY<br>
-        are set correctly in your Vercel environment variables.<br><br>
-        Error: ${e.message}
-      </small>
-    </div>`;
-    showToast('Connection failed','err');
+    showToast('Delivery confirmed — Shopify inventory updated','ok');
+    setTimeout(()=>closeDeliveryModal(),2000);
+  } else {
+    statusEl.textContent=`${okCount}/${total} items updated — ${total-okCount} failed (see ⚠ above)`;
+    btn.disabled=false;
+    btn.textContent='Retry Failed Items';
+    btn.style.background='';
   }
 }
 
-
-function processInventoryLevels(levels){
-  inventoryByVariant={};
-  // Invert locationMap for lookup: location_id -> warehouse code
-  const locIdToCode={};
-  Object.entries(locationMap).forEach(([code,id])=>locIdToCode[String(id)]=code);
-
-  levels.forEach(lv=>{
-    const vid=String(lv.inventory_item_id); // Note: this is inventory_item_id not variant_id
-    // We'll use location_id to get warehouse code
-    const code=locIdToCode[String(lv.location_id)];
-    if(!code)return;
-    if(!inventoryByVariant[vid])inventoryByVariant[vid]={};
-    // available can be null = "Not stocked" — only set if it's a real number
-    if(lv.available!==null&&lv.available!==undefined){
-      inventoryByVariant[vid][code]=parseInt(lv.available);// store exact: 0, negative, positive
-    }
-    // Also track if stocked (even if 0) vs not stocked (null)
-    if(!inventoryByVariant[vid]._stocked)inventoryByVariant[vid]._stocked=[];
-    if(lv.available!==null)inventoryByVariant[vid]._stocked.push(code);
-  });
-}
-
-// Look up inventory for a variant at a specific warehouse
-// Returns qty if stocked there, or null if "Not stocked"
-function variantQtyAtLocation(inventoryItemId, whCode){
-  const rec=inventoryByVariant[String(inventoryItemId)];
-  if(!rec)return null;
-  if(!(rec._stocked||[]).includes(whCode))return null; // Not stocked
-  return rec[whCode]!==undefined?rec[whCode]:0;
-}
-
-function processSales(orders){
-  salesData={};
-  salesDataVariant={};
-  salesDataAll=orders;
-  orders.forEach(o=>(o.line_items||[]).forEach(i=>{
-    const pid=String(i.product_id);
-    const vid=String(i.variant_id);
-    salesData[pid]=(salesData[pid]||0)+i.quantity;
-    salesDataVariant[vid]=(salesDataVariant[vid]||0)+i.quantity;
-  }));
-}
-
-function salesForPeriod(days){
-  const since=Date.now()-days*24*60*60*1000;
-  const counts={};
-  const variantCounts={};
-  salesDataAll.forEach(o=>{
-    const t=new Date(o.created_at).getTime();
-    if(t>=since)(o.line_items||[]).forEach(i=>{
-      const pid=String(i.product_id);
-      const vid=String(i.variant_id);
-      counts[pid]=(counts[pid]||0)+i.quantity;
-      variantCounts[vid]=(variantCounts[vid]||0)+i.quantity;
-    });
-  });
-  return{counts,variantCounts};
-}
-
-function setPeriod(days,el){
-  activePeriod=days;
-  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('popularSub').textContent=`Ranked by units sold — last ${days} days · live from Shopify`;
-  const {counts,variantCounts}=salesForPeriod(days);
-  const p=filtered().map(x=>({
-    ...x,
-    soldN:counts[String(x.id)]||0,
-    variantData:(x.variantData||[]).map(v=>({...v,soldN:variantCounts[String(v.id)]||0}))
-  }));
-  renderPopularWithData(p,days);
-}
-
-function processProducts(raw){
-  const hasLocationData=Object.keys(inventoryByVariant).length>0;
-  const hasLocationMap=Object.keys(locationMap).length>0;
-
-  allProducts=raw.filter(p=>!isDS(p.tags)).map(p=>{
-    const v=p.variants||[];
-    const imgById={};
-    (p.images||[]).forEach(img=>{if(img.id)imgById[img.id]=img.src;});
-
-    if(hasLocationData&&hasLocationMap){
-      const warehouseCodes=Object.keys(locationMap);
-      const whVariants={};
-      const whQty={};
-      warehouseCodes.forEach(wh=>{whVariants[wh]=[];whQty[wh]=0;});
-
-      const variantData=v.map(x=>{
-        const iid=String(x.inventory_item_id||x.id);
-        const locData=inventoryByVariant[iid]||{};
-        const varWarehouses=[];
-
-        warehouseCodes.forEach(wh=>{
-          const stocked=(locData._stocked||[]).includes(wh);
-          if(stocked){
-            // Include regardless of quantity — only "Not stocked" (null) is excluded
-            const q=locData[wh]!==undefined?locData[wh]:0;
-            varWarehouses.push(wh);
-            whVariants[wh].push({
-              id:String(x.id),inventoryItemId:iid,title:x.title,
-              qty:q,status:status(q),price:parseFloat(x.price||0).toFixed(2),
-              tracked:x.inventory_management==='shopify',
-              image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-              soldN:salesDataVariant[String(x.id)]||0,warehouses:[wh]
-            });
-            whQty[wh]+=q;
-          }
-        });
-
-        const hasLocInfo=(locData._stocked||[]).length>0;
-        const variantInInventoryData=inventoryByVariant.hasOwnProperty(iid);
-        const totalLocQty=varWarehouses.reduce((s,wh)=>s+(locData[wh]||0),0);
-
-        // Exclude if location data exists but variant has no local warehouse presence
-        if(hasLocInfo&&varWarehouses.length===0)return null;
-        // Exclude if locationMap is loaded but variant has NO entry in inventory data at all
-        // → means it was never set up at any local warehouse → it's dropship
-        if(!variantInInventoryData)return null;
-
-        const fallbackQty=parseInt(x.inventory_quantity)||0;
-        return{
-          id:String(x.id),inventoryItemId:iid,title:x.title,
-          qty:hasLocInfo?totalLocQty:fallbackQty,
-          status:status(hasLocInfo?totalLocQty:(parseInt(x.inventory_quantity)||0)),
-          price:parseFloat(x.price||0).toFixed(2),
-          tracked:x.inventory_management==='shopify',
-          image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-          soldN:salesDataVariant[String(x.id)]||0,
-          warehouses:varWarehouses
-        };
-      }).filter(Boolean);
-
-      const productWarehouses=warehouseCodes.filter(wh=>whVariants[wh].length>0);
-      if(!productWarehouses.length)return null;
-      const totalQty=warehouseCodes.reduce((s,wh)=>s+whQty[wh],0);
-
-      return{
-        id:p.id,title:p.title,handle:p.handle||'',
-        image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
-        qty:totalQty,variants:v.length,variantData,whVariants,whQty,
-        status:status(totalQty),sold90:salesData[String(p.id)]||0,
-        price:parseFloat(v[0]?.price||0).toFixed(2),
-        warehouses:productWarehouses
-      };
-    } else {
-      const tracked=v.filter(x=>x.inventory_management==='shopify');
-      const qty=tracked.reduce((s,x)=>s+(parseInt(x.inventory_quantity)||0),0);
-      const noTags=raw.every(p=>!(p.tags||'').includes('warehouse:'));
-      let wh=parseWH(p.tags);
-      if(noTags&&qty>0)wh=['us','uk','au'];
-      if(!wh.length)return null;
-      const variantData=v.map(x=>({
-        id:String(x.id),title:x.title,
-        qty:parseInt(x.inventory_quantity)||0,
-        status:status(parseInt(x.inventory_quantity)||0),
-        price:parseFloat(x.price||0).toFixed(2),
-        tracked:x.inventory_management==='shopify',
-        image:x.image_id&&imgById[x.image_id]?imgById[x.image_id]:(p.image?p.image.src:null),
-        soldN:salesDataVariant[String(x.id)]||0,warehouses:wh
-      }));
-      return{
-        id:p.id,title:p.title,handle:p.handle||'',
-        image:p.images&&p.images[0]?p.images[0].src:(p.image?p.image.src:null),
-        qty,variants:v.length,variantData,status:status(qty),
-        sold90:salesData[String(p.id)]||0,
-        price:parseFloat(v[0]?.price||0).toFixed(2),warehouses:wh
-      };
-    }
-  }).filter(Boolean);
-}
-
-function loadDemo(){
-  salesData={'1':143,'2':98,'3':201,'4':87,'5':44,'6':112,'7':33,'8':76,'9':155,'10':67,'11':189,'12':29};
-  allProducts=[
-    {id:'1',title:'Carbon Fiber MagSafe Ring Case Z Fold 6',qty:3,status:'critical',sold90:143,price:'49.99',variants:3,warehouses:['us']},
-    {id:'2',title:'Leather Wallet Case Z Fold 6 Navy',qty:7,status:'low',sold90:98,price:'44.99',variants:4,warehouses:['us','uk']},
-    {id:'3',title:'Clear Slim Case Z Flip 6',qty:2,status:'critical',sold90:201,price:'24.99',variants:5,warehouses:['us']},
-    {id:'4',title:'Titanium Stand Ring Z Fold 6',qty:5,status:'critical',sold90:87,price:'54.99',variants:2,warehouses:['us','au','uk']},
-    {id:'5',title:'Rugged Armor Z Fold 6 Black',qty:13,status:'low',sold90:44,price:'32.99',variants:3,warehouses:['uk']},
-    {id:'6',title:'Classic Leather Z Flip 6 Beige',qty:19,status:'low',sold90:112,price:'39.99',variants:2,warehouses:['au']},
-    {id:'7',title:'Hinge Cover Z Fold 6 White',qty:25,status:'ok',sold90:33,price:'29.99',variants:3,warehouses:['uk','au']},
-    {id:'8',title:'Soft Silicone Z Flip 6 Sage',qty:41,status:'ok',sold90:76,price:'19.99',variants:6,warehouses:['us','au','uk']},
-    {id:'9',title:'Gold Ring Luxury Z Flip 6',qty:34,status:'ok',sold90:155,price:'59.99',variants:2,warehouses:['au']},
-    {id:'10',title:'Privacy Screen Z Fold 6',qty:9,status:'low',sold90:67,price:'27.99',variants:1,warehouses:['us','uk']},
-    {id:'11',title:'MagSafe Leather Folio Z Fold 6',qty:4,status:'critical',sold90:189,price:'64.99',variants:2,warehouses:['uk']},
-    {id:'12',title:'Slim Matte Case Z Flip 6',qty:31,status:'ok',sold90:29,price:'22.99',variants:4,warehouses:['au','uk']},
-  ];
-  document.getElementById('syncInfo').textContent='Demo mode — proxy offline';
-  document.getElementById('syncTime').textContent='Demo data';
-  renderAll();
-}
-
-function updateCounts(){
-  ['us','uk','au'].forEach(w=>document.getElementById('cnt-'+w).textContent=allProducts.filter(p=>p.warehouses.includes(w)).length);
-  document.getElementById('cnt-all').textContent=allProducts.length;
-}
-
-function renderAll(){
-  updateCounts();
-  const p=filtered(),wh=WH[activeWarehouse];
-  document.getElementById('whTitle').textContent=wh.short;
-  document.getElementById('whSub').textContent=p.length+' products with stock tracked at '+wh.label;
-  document.getElementById('s-skus').textContent=p.length;
-  document.getElementById('s-units').textContent=p.reduce((s,x)=>s+x.qty,0).toLocaleString();
-  document.getElementById('s-low').textContent=p.filter(x=>x.status==='low').length;
-  document.getElementById('s-crit').textContent=p.filter(x=>x.status==='critical').length;
-  document.getElementById('s-wh').textContent=wh.label;
-  document.getElementById('ss-skus').textContent=p.length;
-  document.getElementById('ss-units').textContent=p.reduce((s,x)=>s+x.qty,0);
-  document.getElementById('ss-low').textContent=p.filter(x=>x.status==='low').length;
-  document.getElementById('ss-crit').textContent=p.filter(x=>x.status==='critical').length;
-  document.getElementById('stockSub').textContent=p.length+' products · '+wh.label;
-  document.getElementById('reorderSub').textContent='Sorted by urgency · '+wh.label;
-  document.getElementById('popularSub').textContent='Ranked by units sold — last 90 days · '+wh.label;
-  const crit=p.filter(x=>x.status==='critical').length;
-  const ab=document.getElementById('alertBanner');
-  if(crit>0){ab.style.display='flex';document.getElementById('alertMsg').textContent=crit+' product'+(crit>1?'s':'')+' critically low at '+wh.label+' — reorder immediately.';}
-  else ab.style.display='none';
-  document.getElementById('alertNavDot').style.display=crit>0?'inline-block':'none';
-  document.getElementById('tableSub').textContent=wh.label+' · '+p.length+' products';
-  renderMainTable(p);renderPriority(p);renderFullTable(p);renderReorder(p);renderPopular(p);
-}
-
-function whDots(whs){return`<div class="mkt-dots">${whs.map(w=>`<div class="mkt-d" style="background:${WH[w].color}" title="${WH[w].label}"></div>`).join('')}</div>`;}
-
-function tblHTML(prods,showWh,prefix){
-  if(!prods.length)return'<div class="empty-state">No products match this filter.</div>';
-  const mx=maxQ(prods);
-  return`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:${showWh?'34%':'42%'}">Product</th>
-    ${showWh?'<th style="width:9%">Markets</th>':''}
-    <th style="width:7%">Units</th>
-    <th style="width:11%">Status</th>
-    <th style="width:14%">Trend</th>
-    <th style="width:10%">Restock</th>
-  </tr></thead><tbody>${prods.map((p,pi)=>{
-    const bdg=p.status==='critical'
-      ?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>'
-      :p.status==='low'
-      ?'<span class="badge b-low"><div class="bdot"></div>Low</span>'
-      :'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
-    const imgUrl=p.image||'';
-    const imgTag=imgUrl
-      ?`<a href="https://scnd9y-a1.myshopify.com/products/${p.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'"></a>`
-      :`<div class="prod-img-placeholder"><svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(26,26,24,.25)"><rect x="2" y="2" width="12" height="12" rx="2"/></svg></div>`;
-
-    const hasVars=p.variantData&&p.variantData.length>1;
-    const varRows=hasVars?`<tbody class="variant-rows" id="vr-${prefix}-${pi}">${p.variantData.map(v=>{
-      const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
-      const vfc=v.status==='critical'?'fill-crit':v.status==='low'?'fill-low':'fill-ok';
-      const vpct=Math.round((v.qty/Math.max(mx,1))*100);
-      const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:`<div class="var-img-ph"></div>`;
-      const iid=v.inventoryItemId||v.id;
-      const locId=locationMap[activeWarehouse]||(Object.values(locationMap)[0]||'');
-      return`<tr class="variant-row">
-        <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
-        ${showWh?'<td></td>':''}
-        <td>
-          <div class="qty-edit-wrap">
-            <input type="number" class="qty-edit-input" value="${v.qty}"
-              data-iid="${iid}" data-loc="${locId}" data-orig="${v.qty}"
-              onkeydown="if(event.key==='Enter')saveQty(this)"
-              oninput="this.nextElementSibling.disabled=false">
-            <button class="qty-save-btn" disabled onclick="saveQty(this.previousElementSibling)" title="Save to Shopify">Save</button>
-          </div>
-        </td>
-        <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
-        <td>${trendHTML(String(p.id),String(v.id))}</td>
-        <td><button class="btn-restock" data-pid="${p.id}" data-vid="${v.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-vtitle="${v.title.replace(/"/g,'&quot;')}" data-img="${(v.image||p.image||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
-          <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
-          + Restock
-        </button></td>
-      </tr>`;
-    }).join('')}</tbody>`:'';
-    return`<tbody><tr>
-      <td>
-        <div class="prod-img-wrap">
-          ${imgTag}
-          <div>
-            <div class="pname prod-expand" onclick="toggleVariants('${prefix}',${pi})" title="${hasVars?'Click to see variants':''}">
-              ${p.title}${hasVars?`<span class="prod-expand-arrow" id="arr-${prefix}-${pi}">▶</span>`:''}
-            </div>
-            <div class="pmeta">${p.variants} variant${p.variants!==1?'s':''} · $${p.price}</div>
-          </div>
-        </div>
-      </td>
-      ${showWh?`<td>${whDots(p.warehouses)}</td>`:''}
-      <td><span class="qty-num">${p.qty}</span></td>
-      <td>${bdg}</td>
-      <td>${trendHTML(String(p.id),'')}</td>
-      <td><button class="btn-restock" data-pid="${p.id}" data-ptitle="${p.title.replace(/"/g,'&quot;')}" data-img="${(p.image||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
-        <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
-        + Restock
-      </button></td>
-    </tr></tbody>${varRows}`;
-  }).join('')}</table></div>`;
-}
-
-function toggleVariants(prefix,pi){
-  const rows=document.getElementById('vr-'+prefix+'-'+pi);
-  const arrow=document.getElementById('arr-'+prefix+'-'+pi);
-  if(!rows)return;
-  const open=rows.classList.toggle('open');
-  if(arrow)arrow.classList.toggle('open',open);
-}
-
-function renderMainTable(p){const f=activeFilter==='all'?p:p.filter(x=>x.status===activeFilter);document.getElementById('mainTable').innerHTML=tblHTML(f,activeWarehouse==='all','ov');}
-function renderFullTable(p){applyStockFilters();}
-
-function renderPriority(p){
-  const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>(a.status==='critical'?0:1)-(b.status==='critical'?0:1)||b.sold90-a.sold90).slice(0,7);
-  if(!list.length){document.getElementById('priList').innerHTML='<div class="empty-state" style="color:var(--green)">✓ All stock levels healthy</div>';return;}
-  document.getElementById('priList').innerHTML=list.map((x,i)=>`
-    <div class="pri-row">
-      <div class="pri-num ${i<3?'p'+(i+1):''}">${i+1}</div>
-      <div class="pri-info">
-        <div class="pri-name">${x.title}</div>
-        <div class="pri-det">${x.qty} units left · ${x.sold90} sold in 90d</div>
-      </div>
-      <span class="badge ${x.status==='critical'?'b-crit':'b-low'}"><div class="bdot"></div>${x.status==='critical'?'Critical':'Low'}</span>
-    </div>`).join('');
-}
-
-
-
-function initETA(){
-  const today=new Date();
-  const yyyy=today.getFullYear();
-  const mm=String(today.getMonth()+1).padStart(2,'0');
-  const dd=String(today.getDate()).padStart(2,'0');
-  const el=document.getElementById('etaOrderDate');
-  if(el&&!el.value)el.value=`${yyyy}-${mm}-${dd}`;
-  calcETA();
-  // Restore saved settings from localStorage
-  try{
-    const saved=localStorage.getItem('fc_recipients');
-    if(saved){
-      const arr=JSON.parse(saved);
-      arr.forEach(e=>addEmail(e));
-    }
-    const fn=localStorage.getItem('fc_fromName');
-    const fe=localStorage.getItem('fc_fromEmail');
-    if(fn)document.getElementById('fromName').value=fn;
-    if(fe)document.getElementById('fromEmail').value=fe;
-  }catch(e){}
-}
-
-function getETADates(){
-  const orderDateVal=document.getElementById('etaOrderDate')?.value;
-  const airDays=parseInt(document.getElementById('etaAirDays')?.value)||7;
-  const seaDays=parseInt(document.getElementById('etaSeaDays')?.value)||30;
-  const base=orderDateVal?new Date(orderDateVal+'T12:00:00'):new Date();
-  const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
-  const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
-  return{
-    airDate:fmt(addDays(base,airDays)),
-    seaDate:fmt(addDays(base,seaDays))
-  };
-}
-
-function calcETA(){
-  const {airDate,seaDate}=getETADates();
-  const airEl=document.getElementById('etaAirResult');
-  const seaEl=document.getElementById('etaSeaResult');
-  if(airEl)airEl.textContent=airDate;
-  if(seaEl)seaEl.textContent=seaDate;
-  renderReorder(filtered());
-}
-
-function renderReorder(p){
-  const list=[...p].filter(x=>x.status!=='ok').sort((a,b)=>a.qty-b.qty);
-  const countEl=document.getElementById('reorderCount');
-  if(countEl)countEl.textContent=list.length?list.length+' product'+(list.length!==1?'s':''):'None';
-  if(!list.length){document.getElementById('reorderTable').innerHTML='<div class="empty-state" style="color:var(--green)">✓ No products need reordering right now</div>';return;}
-  const {airDate,seaDate}=getETADates();
-  document.getElementById('reorderTable').innerHTML=`<div class="rq-list">${list.map((x,i)=>{
-    const imgUrl=x.image||'';
-    const imgTag=imgUrl
-      ?`<img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'" style="flex-shrink:0">`
-      :`<div class="prod-img-placeholder" style="flex-shrink:0"></div>`;
-    const bdgCls=x.status==='critical'?'b-crit':'b-low';
-    const bdgLabel=x.status==='critical'?'Critical':'Low';
-    const suggestQty=Math.max(50-x.qty,10);
-    return`<div class="rq-row">
-      <div class="rq-header" onclick="toggleRQ('rq-body-${i}','rq-arr-${i}')">
-        <span class="rq-rank">${i+1}</span>
-        <span class="rq-arrow" id="rq-arr-${i}">▶</span>
-        <div class="prod-img-wrap" style="flex:1;min-width:0;gap:8px">
-          ${imgTag}
-          <div style="min-width:0">
-            <div class="rq-title">${x.title}</div>
-            <div class="pmeta" style="margin-top:1px">
-              <span class="badge ${bdgCls}" style="font-size:9px;padding:1px 6px"><div class="bdot"></div>${bdgLabel}</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;margin-left:6px">${x.qty} units</span>
-              ${activeWarehouse==='all'?`<span style="margin-left:6px">${whDots(x.warehouses)}</span>`:''}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="rq-body" id="rq-body-${i}">
-        <div class="rq-grid">
-          <div class="rq-cell">
-            <div class="rq-cell-label">Units in stock</div>
-            <div class="rq-cell-value">${x.qty}</div>
-          </div>
-          <div class="rq-cell">
-            <div class="rq-cell-label">Sold 90d</div>
-            <div class="rq-cell-value">${x.sold90}</div>
-          </div>
-          <div class="rq-cell">
-            <div class="rq-cell-label">✈ Air arrival</div>
-            <div class="rq-cell-value air">${airDate}</div>
-          </div>
-          <div class="rq-cell">
-            <div class="rq-cell-label">⛵ Sea arrival</div>
-            <div class="rq-cell-value sea">${seaDate}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="font-size:11px;color:rgba(26,26,24,.45);font-family:'DM Mono',monospace">Suggested order: ${suggestQty} units</span>
-          <button class="btn-restock" data-pid="${x.id}" data-img="${(x.image||'').replace(/"/g,'&quot;')}" data-title="${x.title.replace(/"/g,'&quot;')}" onclick="event.stopPropagation();quickRestockBtn(this)">
-            <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v14M1 8h14"/></svg>
-            + Restock
-          </button>
-        </div>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
-}
-
-
-function toggleReorderList(){
-  const wrap=document.getElementById('reorderTableWrap');
-  const arrow=document.getElementById('reorderArrow');
-  if(!wrap)return;
-  const open=wrap.style.display==='none';
-  wrap.style.display=open?'block':'none';
-  if(arrow)arrow.style.transform=open?'rotate(90deg)':'';
-}
-
-function toggleRQ(bodyId, arrId){
-  const body=document.getElementById(bodyId);
-  const arr=document.getElementById(arrId);
-  if(!body)return;
-  const open=body.classList.toggle('open');
-  if(arr)arr.classList.toggle('open',open);
-}
-
-function renderPopular(p){
-  const {counts,variantCounts}=salesForPeriod(activePeriod);
-  const enriched=p.map(x=>({
-    ...x,
-    soldN:counts[String(x.id)]||0,
-    variantData:(x.variantData||[]).map(v=>({...v,soldN:variantCounts[String(v.id)]||0}))
-  }));
-  renderPopularWithData(enriched,activePeriod);
-}
-
-function renderPopularWithData(p,days){
-  const list=[...p].sort((a,b)=>b.soldN-a.soldN);
-  const mx=Math.max(...list.map(x=>x.soldN),1);
-  document.getElementById('popularTable').innerHTML=`<div class="tbl-wrap"><table><thead><tr>
-    <th style="width:5%">Rank</th>
-    <th style="width:34%">Product</th>
-    <th style="width:10%">Sold ${days}d</th>
-    <th style="width:7%">Stock</th>
-    <th style="width:11%">Status</th>
-    <th style="width:14%">Trend</th>
-    <th style="width:11%">Action</th>
-  </tr></thead><tbody>${list.map((x,i)=>{
-    const imgUrl=x.image||'';
-    const imgTag=imgUrl?`<a href="https://scnd9y-a1.myshopify.com/products/${x.handle}" target="_blank" title="View on Shopify"><img src="${imgUrl}" class="prod-img" alt="" onerror="this.style.display='none'"></a>`:'';
-    const bdg=x.status==='critical'?'<span class="badge b-crit"><div class="bdot"></div>Critical</span>':x.status==='low'?'<span class="badge b-low"><div class="bdot"></div>Low</span>':'<span class="badge b-ok"><div class="bdot"></div>OK</span>';
-    const act=x.status!=='ok'&&x.soldN>20?'<span class="badge b-crit"><div class="bdot"></div>Restock urgently</span>':x.status!=='ok'?'<span class="badge b-low"><div class="bdot"></div>Restock</span>':'<span class="badge b-ok"><div class="bdot"></div>Healthy</span>';
-    // trend computed inline via trendHTML()
-    const hasVars=x.variantData&&x.variantData.length>1;
-    // Variant rows for popular table
-    const varRows=hasVars?`<tbody class="variant-rows" id="vr-pop-${i}">${x.variantData.map(v=>{
-      const vs=v.status==='critical'?'b-crit':v.status==='low'?'b-low':'b-ok';
-      const vImg=v.image?`<img src="${v.image}" class="var-img" alt="" onerror="this.style.display='none'">`:'<div class="var-img-ph"></div>';
-      const vSold=v.soldN||0;
-      const vMx=Math.max(...(x.variantData||[]).map(vv=>vv.soldN||0),1);
-      return`<tr class="variant-row">
-        <td></td>
-        <td style="padding-left:10px"><div style="display:flex;align-items:center;gap:8px">${vImg}<span class="variant-name">${v.title}</span></div></td>
-        <td><span class="sales-chip" style="${vSold>0?'background:rgba(45,95,166,.1);color:#2D5FA6':''}">${vSold}</span></td>
-        <td><span class="variant-qty">${v.qty}</span></td>
-        <td><span class="badge ${vs}" style="font-size:9px;padding:2px 7px"><div class="bdot"></div>${v.status==='critical'?'Critical':v.status==='low'?'Low':'OK'}</span></td>
-        <td>${trendHTML(x.id,String(v.id))}</td>
-        <td></td>
-      </tr>`;
-    }).join('')}</tbody>`:'';
-    return`<tbody><tr>
-      <td style="font-family:'DM Mono',monospace;font-weight:500;font-size:12px;color:rgba(26,26,24,.4)">#${i+1}</td>
-      <td>
-        <div class="prod-img-wrap">
-          ${imgTag}
-          <div>
-            <div class="pname prod-expand" onclick="toggleVariants('pop',${i})" style="cursor:${hasVars?'pointer':'default'}">
-              ${x.title}${hasVars?`<span class="prod-expand-arrow" id="arr-pop-${i}">▶</span>`:''}
-            </div>
-            <div class="pmeta">$${x.price} · ${x.variants} variant${x.variants!==1?'s':''}</div>
-          </div>
-        </div>
-      </td>
-      <td><span class="sales-chip">${x.soldN}</span></td>
-      <td><span class="qty-num">${x.qty}</span></td>
-      <td>${bdg}</td>
-      <td>${trendHTML(x.id,'')}</td>
-      <td>${act}</td>
-    </tr></tbody>${varRows}`;
-  }).join('')}</table></div>`;
-}
-
-function setWarehouse(w){
-  activeWarehouse=w;
-  document.querySelectorAll('.whtab').forEach(t=>{t.className='whtab';});
-  const tab=document.getElementById('tab-'+w);
-  const cls=w==='all'?'active':`active-${w}`;
-  tab.classList.add(cls);
-  activeFilter='all';
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  document.querySelectorAll('.chip')[0].classList.add('active');
-  if(allProducts.length)renderAll();
-}
-
-function setView(v,el){
-  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function setChip(f,el){
-  activeFilter=f;
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  renderMainTable(filtered());
-}
-
-function doSearch(q){applyStockFilters();}
-
-function applyStockFilters(){
-  const q=(document.getElementById('stockSearchInput')?.value||'').toLowerCase().trim();
-  const status=document.getElementById('sfStatus')?.value||'';
-  const wh=document.getElementById('sfWarehouse')?.value||'';
-  const sort=document.getElementById('sfSort')?.value||'default';
-
-  let prods=allProducts.slice();
-
-  // Warehouse filter (independent of sidebar warehouse tab)
-  if(wh) prods=prods.filter(p=>p.warehouses.includes(wh));
-  else prods=filtered(); // respect sidebar tab
-
-  // Search
-  if(q) prods=prods.filter(p=>p.title.toLowerCase().includes(q));
-
-  // Status filter
-  if(status) prods=prods.filter(p=>p.status===status);
-
-  // Sort
-  if(sort==='qty_asc') prods=[...prods].sort((a,b)=>a.qty-b.qty);
-  else if(sort==='qty_desc') prods=[...prods].sort((a,b)=>b.qty-a.qty);
-  else if(sort==='sold_desc') prods=[...prods].sort((a,b)=>b.sold90-a.sold90);
-  else if(sort==='name_asc') prods=[...prods].sort((a,b)=>a.title.localeCompare(b.title));
-  else if(sort==='name_desc') prods=[...prods].sort((a,b)=>b.title.localeCompare(a.title));
-
-  document.getElementById('fullTable').innerHTML=tblHTML(prods,activeWarehouse==='all','st');
-}
-
-function clearStockFilters(){
-  const si=document.getElementById('stockSearchInput');
-  const ss=document.getElementById('sfStatus');
-  const sw=document.getElementById('sfWarehouse');
-  const so=document.getElementById('sfSort');
-  if(si)si.value='';
-  if(ss)ss.value='';
-  if(sw)sw.value='';
-  if(so)so.value='default';
-  applyStockFilters();
-}
-
-function saveThresh(){
-  critT=parseInt(document.getElementById('critT').value)||5;
-  lowT=parseInt(document.getElementById('lowT').value)||20;
-  allProducts=allProducts.map(p=>({...p,status:status(p.qty)}));
-  renderAll();
-  const m=document.getElementById('savedMsg');m.style.display='block';setTimeout(()=>m.style.display='none',2500);
-  showToast('Thresholds updated','ok');
-}
-
-function handleEmailKey(e){
-  if(e.key==='Enter'||e.key===','||e.key==='	'){e.preventDefault();addEmail(e.target.value.trim());e.target.value='';}
-  if(e.key==='Backspace'&&e.target.value===''&&emailRecipients.length)removeEmail(emailRecipients.length-1);
-}
-function addEmail(email){if(!email||!email.includes('@'))return;if(emailRecipients.includes(email))return;emailRecipients.push(email);renderTags();}
-function removeEmail(i){emailRecipients.splice(i,1);renderTags();}
-function renderTags(){
-  const wrap=document.getElementById('emailTagWrap'),input=document.getElementById('emailTagInput');
-  wrap.innerHTML='';
-  emailRecipients.forEach((e,i)=>{const t=document.createElement('div');t.className='email-tag';t.innerHTML=`<span>${e}</span><span class="email-tag-remove" onclick="removeEmail(${i})">×</span>`;wrap.appendChild(t);});
-  wrap.appendChild(input);input.focus();
-}
-function saveRecipients(){
-  // Also add whatever is currently typed in the input
-  const input=document.getElementById('emailTagInput');
-  if(input&&input.value.trim()){
-    addEmail(input.value.trim());
-    input.value='';
-  }
-  if(!emailRecipients.length){showSendStatus('Type an email address and press Enter or Save.','err');return;}
-  // Persist to localStorage so they survive page reload
-  try{localStorage.setItem('fc_recipients',JSON.stringify(emailRecipients));}catch(e){}
-  try{localStorage.setItem('fc_fromName',document.getElementById('fromName').value);}catch(e){}
-  try{localStorage.setItem('fc_fromEmail',document.getElementById('fromEmail').value);}catch(e){}
-  const m=document.getElementById('recipSaved');
-  m.style.display='block';
-  m.textContent='✓ '+emailRecipients.length+' recipient'+(emailRecipients.length!==1?'s':'')+' saved';
-  setTimeout(()=>m.style.display='none',3000);
-  showToast('Recipients saved — ready to send','ok');
-}
-function saveTriggers(){const m=document.getElementById('triggerSaved');m.style.display='block';setTimeout(()=>m.style.display='none',2500);showToast('Triggers saved','ok');}
-
-async function sendAlert(){
-  // Also pick up any email still in the input that wasn't Enter-confirmed
-  const pendingInput=document.getElementById('emailTagInput');
-  if(pendingInput&&pendingInput.value.trim()){
-    addEmail(pendingInput.value.trim());
-    pendingInput.value='';
-  }
-  if(!emailRecipients.length){showSendStatus('Enter an email address in the Recipients field above and press Enter or Save Recipients first.','err');return;}
-  const type=document.getElementById('alertType').value;
-  const wh=document.getElementById('alertWh').value;
-  const btn=document.getElementById('sendAlertBtn');
-  btn.disabled=true;btn.textContent='Sending…';
-  showSendStatus('Sending alert…','sending');
-  const prods=wh==='all'?allProducts:allProducts.filter(p=>p.warehouses.includes(wh));
-  const toSend=type==='critical'?prods.filter(p=>p.status==='critical'):type==='low'?prods.filter(p=>p.status!=='ok'):prods;
-  try{
-    const r=await fetch(`${PROXY}?service=alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:emailRecipients,from_name:document.getElementById('fromName').value,from_email:document.getElementById('fromEmail').value,subject:`FoldifyCase Stock Alert — ${WH[wh].label}`,type,warehouse:WH[wh].label,products:toSend})});
-    if(r.ok){showSendStatus('✓ Alert sent to '+emailRecipients.join(', '),'ok');addLog('Manual alert','Low + critical · '+WH[wh].label,'ok');showToast('Alert sent successfully','ok');}
-    else throw new Error();
-  }catch(e){showSendStatus('Could not send — check RESEND_API_KEY in Vercel env vars.','err');addLog('Manual alert','Failed — proxy error','err');showToast('Send failed','err');}
-  btn.disabled=false;btn.textContent='Send Alert';
-}
-
-function showSendStatus(msg,type){const el=document.getElementById('sendStatus');el.textContent=msg;el.className='send-status '+type;}
-
-function addLog(type,detail,s){
-  const now=new Date().toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  alertLog.unshift({time:now,type,detail,s});
-  document.getElementById('alertLog').innerHTML=alertLog.map(l=>`<div class="log-row"><span class="log-time">${l.time}</span><span class="log-msg">${l.type} — ${l.detail}</span><span class="badge ${l.s==='ok'?'b-ok':'b-crit'}" style="flex-shrink:0"><div class="bdot"></div>${l.s==='ok'?'Sent':'Failed'}</span></div>`).join('');
-}
-
-function showToast(msg,type){
-  const t=document.getElementById('toast');
-  document.getElementById('tMsg').textContent=msg;
-  t.className='toast '+(type||'ok')+' show';
-  setTimeout(()=>t.classList.remove('show'),3200);
-}
-
-startLoad();
-
-</script>
-</body>
-</html>
