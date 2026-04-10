@@ -2172,9 +2172,9 @@ function editTracking(orderId){
 // ── PO ORDER PERSISTENCE — Vercel Blob (shared across all devices) ──────────
 const PO_STORAGE_KEY = 'fc_po_orders'; // localStorage fallback key
 
-// Save to Blob (shared) + localStorage (instant fallback)
-async 
 // ── EMAIL SETTINGS ─────────────────────────────────────────────────────────
+
+// Save to Blob (shared) + localStorage (instant fallback)
 function emailSettingsDirty(){
   const btn=document.getElementById('saveEmailSettingsBtn');
   if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
