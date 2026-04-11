@@ -1,9 +1,11 @@
 {
-  "name": "foldifycase-warehouse",
+  "name": "warehouse-stock-management-app",
   "version": "1.0.0",
-  "description": "FoldifyCase warehouse stock management proxy",
-  "private": true,
+  "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.0"
   }
 }
