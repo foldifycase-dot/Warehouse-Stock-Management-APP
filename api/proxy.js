@@ -1,3 +1,5 @@
+import { put, list, head } from '@vercel/blob';
+
 const STORE = process.env.SHOPIFY_STORE;
 const TOKEN = process.env.SHOPIFY_TOKEN;
 const RESEND_KEY = process.env.RESEND_API_KEY;
@@ -177,7 +179,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, id: result.id });
     }
 
-    // ── BLOB: save/load PO order history ────────────────────────────────────
+    // ── BLOB: save/load PO order history via @vercel/blob SDK ───────────────
     if (service === 'blob') {
 
       if (action === 'save_po') {
@@ -187,56 +189,49 @@ export default async function handler(req, res) {
         if (!Array.isArray(orders)) return res.status(400).json({ error: 'orders array required' });
         if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
 
-        // PUT to Vercel Blob REST API
-        // addRandomSuffix=0 keeps filename stable, allowOverwrite=1 replaces existing file
-        const encodedKey = PO_BLOB_KEY.split('/').map(encodeURIComponent).join('/');
-        const putUrl = `https://blob.vercel-storage.com/${encodedKey}?addRandomSuffix=0&allowOverwrite=1`;
-        console.log('[save_po] Writing to:', putUrl);
-        const r = await fetch(putUrl, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${BLOB_TOKEN}`,
-            'Content-Type': 'application/json',
-            'x-api-version': '7',
-          },
-          body: JSON.stringify(orders),
-        });
-        const responseText = await r.text();
-        console.log('[save_po] Status:', r.status, 'Response:', responseText.slice(0, 200));
-        if (!r.ok) {
-          return res.status(r.status).json({ error: 'Blob write failed', detail: responseText });
+        try {
+          // Use SDK put() with addRandomSuffix:false and allowOverwrite:true
+          // This guarantees a stable, predictable filename every time
+          const blob = await put(PO_BLOB_KEY, JSON.stringify(orders), {
+            access: 'public',
+            addRandomSuffix: false,
+            allowOverwrite: true,
+            contentType: 'application/json',
+            token: BLOB_TOKEN,
+          });
+          console.log('[save_po] Saved to:', blob.url);
+          return res.status(200).json({ success: true, url: blob.url });
+        } catch(e) {
+          console.error('[save_po] Error:', e.message);
+          return res.status(500).json({ error: e.message });
         }
-        let d = {};
-        try { d = JSON.parse(responseText); } catch(e) {}
-        console.log('[save_po] Saved to:', d.url);
-        return res.status(200).json({ success: true, url: d.url });
       }
 
       if (action === 'load_po') {
         if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
 
-        // Fetch directly using known public store URL + file path
-        const BLOB_BASE = 'https://srtpdbjltmzvyywy.public.blob.vercel-storage.com';
-        const fileUrl = `${BLOB_BASE}/${PO_BLOB_KEY.replace(/ /g, '%20')}`;
-        console.log('[load_po] Fetching:', fileUrl);
+        try {
+          // Use SDK head() to check if file exists and get its URL
+          const blob = await head(PO_BLOB_KEY, { token: BLOB_TOKEN });
+          console.log('[load_po] Found file:', blob.url);
 
-        const r = await fetch(fileUrl + '?t=' + Date.now()); // cache-bust
-        console.log('[load_po] Response status:', r.status);
+          // Fetch its content directly using the stable URL
+          const r = await fetch(blob.url + '?t=' + Date.now());
+          if (!r.ok) throw new Error('fetch failed: ' + r.status);
 
-        // 404 = file doesn't exist yet (no orders placed)
-        if (r.status === 404) {
-          console.log('[load_po] No orders file yet — returning empty array');
-          return res.status(200).json({ orders: [] });
+          const orders = await r.json();
+          console.log('[load_po] Loaded', orders.length, 'orders');
+          return res.status(200).json({ orders: Array.isArray(orders) ? orders : [] });
+
+        } catch(e) {
+          // head() throws if file not found — that means no orders yet
+          if (e.message && (e.message.includes('not found') || e.message.includes('404') || e.message.includes('BlobNotFoundError'))) {
+            console.log('[load_po] No orders file yet');
+            return res.status(200).json({ orders: [] });
+          }
+          console.error('[load_po] Error:', e.message);
+          return res.status(200).json({ orders: [], error: e.message });
         }
-        if (!r.ok) {
-          const err = await r.text();
-          console.error('[load_po] Fetch failed:', r.status, err);
-          return res.status(200).json({ orders: [], error: 'fetch failed: ' + r.status });
-        }
-
-        const orders = await r.json();
-        console.log('[load_po] Loaded', Array.isArray(orders) ? orders.length : '?', 'orders');
-        return res.status(200).json({ orders: Array.isArray(orders) ? orders : [] });
       }
 
       return res.status(400).json({ error: `Unknown blob action: ${action}` });
