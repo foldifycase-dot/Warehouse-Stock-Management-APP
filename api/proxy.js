@@ -187,8 +187,11 @@ export default async function handler(req, res) {
         if (!Array.isArray(orders)) return res.status(400).json({ error: 'orders array required' });
         if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
 
-        // PUT JSON to Vercel Blob
-        const r = await fetch(`https://blob.vercel-storage.com/${PO_BLOB_KEY}`, {
+        // PUT JSON to Vercel Blob with no random suffix so URL is stable/predictable
+        const encodedKey = PO_BLOB_KEY.split('/').map(encodeURIComponent).join('/');
+        const putUrl = `https://blob.vercel-storage.com/${encodedKey}?addRandomSuffix=0`;
+        console.log('[save_po] Writing to:', putUrl);
+        const r = await fetch(putUrl, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${BLOB_TOKEN}`,
@@ -203,6 +206,7 @@ export default async function handler(req, res) {
           return res.status(r.status).json({ error: 'Blob write failed', detail: err });
         }
         const d = await r.json();
+        console.log('[save_po] Saved to:', d.url);
         return res.status(200).json({ success: true, url: d.url });
       }
 
