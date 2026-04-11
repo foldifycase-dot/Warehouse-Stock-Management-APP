@@ -528,6 +528,11 @@ td:first-child{padding-left:16px;}
 .po-group-delete{width:22px;height:22px;border:none;background:transparent;cursor:pointer;color:rgba(26,26,24,.2);font-size:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0;padding:0;margin-left:2px;}
 .po-group-delete:hover{background:rgba(201,64,64,.1);color:var(--red);}
 
+
+.po-group-warehouse{font-size:10px;padding:3px 9px;border:1px solid rgba(45,95,166,.35);border-radius:5px;background:rgba(45,95,166,.06);cursor:pointer;color:#2D5FA6;font-family:"Inter",sans-serif;font-weight:600;transition:all .15s;margin-left:4px;}
+.po-group-warehouse:hover{background:#2D5FA6;color:#fff;border-color:#2D5FA6;}
+.po-group-warehouse-sent{font-size:10px;color:rgba(26,26,24,.35);font-weight:500;margin-left:4px;font-style:italic;}
+
 /* EMPTY / LOADING */
 .empty-state{padding:28px;text-align:center;font-size:12px;color:rgba(26,26,24,.4);}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:rgba(26,26,24,.4);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
@@ -2081,6 +2086,9 @@ function renderPOLog(){
     const deliverBtn=o.delivered
       ?`<span class="po-group-delivered">✓ Delivered ${o.deliveredDate}</span>`
       :`<button class="po-group-deliver" onclick="confirmDelivery('${o.id}')">📦 Confirm Delivery</button>`;
+    const warehouseBtn=o.warehouseEmailed
+      ?`<span class="po-group-warehouse-sent">✓ Warehouse notified</span>`
+      :`<button class="po-group-warehouse" onclick="emailWarehouse('${o.id}')">🏭 Email Warehouse</button>`;
 
     // Tracking number row
     const trackingRow=o.delivered
@@ -2122,6 +2130,7 @@ function renderPOLog(){
         <span class="po-group-ship ${o.ship}">${o.ship==='air'?'✈ Air':'⛵ Sea'}</span>
         <div class="po-group-eta ${o.ship}" style="margin:0 8px">${o.eta}</div>
         ${sendBtn}
+        ${warehouseBtn}
         ${deliverBtn}
         <button class="po-group-delete" onclick="deletePOOrder('${o.id}')" title="Delete this order">×</button>
       </div>
@@ -2141,6 +2150,165 @@ function deletePOOrder(orderId){
   savePOOrders();
   renderPOLog();
   showToast('Order '+orderId+' deleted','ok');
+}
+
+
+async function emailWarehouse(orderId){
+  const order=poOrders.find(o=>o.id===orderId);
+  if(!order)return;
+
+  // Get warehouse email from settings
+  const warehouseEmail=localStorage.getItem('fc_delivery_notify')||'';
+  if(!warehouseEmail){
+    showToast('Set a US Warehouse email in Settings → Email first','err');
+    // Switch to email settings view
+    document.querySelectorAll('.nav-btn').forEach(b=>{
+      if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'email-settings'")){setView('email-settings',b);}
+    });
+    return;
+  }
+
+  const fromEmail=document.getElementById('fromEmail')?.value||'warehouse@foldifycase.com.au';
+  const fromName=document.getElementById('fromName')?.value||'FoldifyCase';
+  const totalQty=order.lines.reduce((s,l)=>s+l.qty,0);
+  const shipLabel=order.ship==='air'?'✈ Air — Express':'⛵ Sea — Standard';
+  const shipColor=order.ship==='air'?'#2D5FA6':'#3D7A5A';
+
+  // Build product rows (same brand structure as supplier email)
+  const productRows=order.lines.map(l=>`
+    <tr>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle;width:80px">
+        ${l.image
+          ?`<img src="${l.image}" width="60" height="60" style="border-radius:6px;object-fit:cover;border:1px solid #E0DDD4;display:block">`
+          :`<div style="width:60px;height:60px;border-radius:6px;background:#EAE7D8;border:1px solid #E0DDD4"></div>`}
+      </td>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle">
+        <div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:3px">${l.product}</div>
+        <div style="font-size:11px;color:#888">${l.variant}</div>
+      </td>
+      <td style="padding:14px 16px;border-bottom:1px solid #EDEAE0;vertical-align:middle;text-align:right;width:60px">
+        <span style="font-size:18px;font-weight:700;color:#1A1A18">${l.qty}</span>
+      </td>
+    </tr>`).join('');
+
+  // PDF link — direct link to the app filtered to this order
+  const appUrl=window.location.origin+window.location.pathname+'?order='+order.id;
+
+  const emailHtml=`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#E8E5DB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#E8E5DB;padding:32px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+  <!-- HEADER -->
+  <tr><td style="background:#1A1A18;border-radius:12px 12px 0 0;padding:24px 32px;border-bottom:3px solid #C8A96E">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td>
+        <div style="color:#FFFFFF;font-size:22px;font-weight:800;letter-spacing:.08em;font-family:Arial,sans-serif">FOLDIFYCASE</div>
+        <div style="color:#C8A96E;font-size:10px;letter-spacing:.22em;text-transform:uppercase;margin-top:4px">INCOMING STOCK — ${order.id}</div>
+      </td>
+      <td align="right">
+        <div style="color:#C8A96E;font-size:20px;font-weight:700;font-family:'Courier New',monospace">${order.id}</div>
+        <div style="color:rgba(255,255,255,.4);font-size:10px;margin-top:2px">${order.orderDate}</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- BANNER -->
+  <tr><td style="background:#E6F1FB;border:1px solid #B8D4F0;padding:16px 32px">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:18px;padding-right:10px">🏭</td>
+      <td>
+        <div style="font-size:13px;font-weight:700;color:#1565C0">Incoming stock order for your warehouse</div>
+        <div style="font-size:12px;color:#1976D2;margin-top:2px">Please prepare to receive the items below. Review the full order list and confirm receipt upon arrival.</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- ORDER DETAILS -->
+  <tr><td style="background:#fff;padding:0">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td width="50%" style="padding:20px 24px 20px 32px;border-right:1px solid #EDEAE0;vertical-align:top">
+        <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:8px">Order details</div>
+        <table cellpadding="0" cellspacing="0">
+          <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px;white-space:nowrap">Order ref</td><td style="font-size:11px;font-weight:700;color:#1A1A18;font-family:'Courier New',monospace">${order.id}</td></tr>
+          <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px">Order date</td><td style="font-size:11px;font-weight:600;color:#1A1A18">${order.orderDate}</td></tr>
+          <tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px">Total units</td><td style="font-size:11px;font-weight:700;color:#1A1A18">${totalQty} units · ${order.lines.length} SKU${order.lines.length!==1?'s':''}</td></tr>
+          ${order.tracking?`<tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px">Tracking</td><td style="font-size:11px;font-weight:700;color:#2D5FA6">${order.tracking}</td></tr>`:''}
+          ${order.notes?`<tr><td style="font-size:11px;color:#888;padding:3px 0;padding-right:12px;vertical-align:top">Notes</td><td style="font-size:11px;color:#555">${order.notes}</td></tr>`:''}
+        </table>
+      </td>
+      <td width="50%" style="padding:20px 32px 20px 24px;vertical-align:top">
+        <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;margin-bottom:8px">Shipping</div>
+        <div style="font-size:13px;font-weight:700;color:#1A1A18;margin-bottom:4px">${shipLabel}</div>
+        <div style="font-size:11px;color:#888;margin-bottom:10px">Expected arrival at your warehouse</div>
+        <div style="display:inline-block;background:${shipColor};color:#fff;font-size:13px;font-weight:700;padding:8px 16px;border-radius:6px">${order.eta}</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- PRODUCT LIST -->
+  <tr><td style="background:#fff;padding:0 0 8px 0;border-top:1px solid #EDEAE0">
+    <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#AAA;padding:16px 32px 8px">Stock to receive</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+      <thead><tr style="background:#EAE7D8">
+        <th style="padding:9px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left;width:80px"></th>
+        <th style="padding:9px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:left">Product / Variant</th>
+        <th style="padding:9px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;text-align:right">Qty</th>
+      </tr></thead>
+      <tbody>${productRows}</tbody>
+    </table>
+  </td></tr>
+
+  <!-- CTA — VIEW ORDER -->
+  <tr><td style="background:#F5F3E9;padding:20px 32px;text-align:center;border-top:1px solid #EDEAE0">
+    <div style="font-size:12px;color:#555;margin-bottom:14px">Open the warehouse app to view the full order details and confirm delivery when stock arrives.</div>
+    <a href="${appUrl}" style="display:inline-block;background:#1A1A18;color:#C8A96E;font-size:12px;font-weight:700;letter-spacing:.05em;padding:12px 28px;border-radius:7px;text-decoration:none;margin-right:8px">
+      → View Order in App
+    </a>
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="background:#1A1A18;border-radius:0 0 12px 12px;padding:14px 32px">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:10px;color:rgba(255,255,255,.35)">FoldifyCase Warehouse · Incoming stock notification</td>
+      <td align="right" style="font-size:10px;color:rgba(200,169,110,.5)">${order.id} · ${order.orderDate}</td>
+    </tr></table>
+  </td></tr>
+
+</table>
+</td></tr></table>
+</body></html>`;
+
+  try{
+    showToast('Sending to warehouse…','ok');
+    const r=await fetch(`${PROXY}?service=alert`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        to:[warehouseEmail],
+        from_name:fromName,
+        from_email:fromEmail,
+        subject:`Incoming Stock — Order ${order.id} | FoldifyCase`,
+        custom_html:emailHtml,
+        type:'warehouse',warehouse:'',products:[]
+      })
+    });
+    const result=await r.json().catch(()=>({}));
+    if(r.ok&&result.success){
+      order.warehouseEmailed=true;
+      savePOOrders();
+      renderPOLog();
+      showToast('Warehouse notified: '+warehouseEmail,'ok');
+    } else {
+      throw new Error(result.error||'Send failed');
+    }
+  }catch(e){
+    showToast('Email failed: '+e.message,'err');
+    console.error('[emailWarehouse]',e);
+  }
 }
 
 function saveTracking(orderId){
@@ -2235,16 +2403,36 @@ async function loadPOOrders(){
     const r=await fetch(`${PROXY}?service=blob&action=load_po`);
     const d=await r.json();
     if(r.ok&&Array.isArray(d.orders)){
-      poOrders=d.orders;
-      console.log('[PO] Loaded',poOrders.length,'order(s) from Blob');
-      // Keep localStorage in sync
-      try{localStorage.setItem(PO_STORAGE_KEY,JSON.stringify(poOrders));}catch(e){}
-      return;
+      if(d.orders.length>0){
+        // Blob has data — use it
+        poOrders=d.orders;
+        console.log('[PO] Loaded',poOrders.length,'order(s) from Blob');
+        try{localStorage.setItem(PO_STORAGE_KEY,JSON.stringify(poOrders));}catch(e){}
+        return;
+      } else {
+        // Blob is empty — check localStorage for orders to migrate up
+        try{
+          const raw=localStorage.getItem(PO_STORAGE_KEY);
+          if(raw){
+            const parsed=JSON.parse(raw);
+            if(Array.isArray(parsed)&&parsed.length>0){
+              poOrders=parsed;
+              console.log('[PO] Migrating',poOrders.length,'order(s) from localStorage → Blob');
+              // Push to Blob so all devices get them
+              savePOOrders();
+              return;
+            }
+          }
+        }catch(e){}
+        // Truly empty — no orders anywhere
+        poOrders=[];
+        return;
+      }
     }
   }catch(e){
     console.warn('[PO] Blob load failed, trying localStorage:',e.message);
   }
-  // Fallback to localStorage
+  // Fallback to localStorage if Blob request failed entirely
   try{
     const raw=localStorage.getItem(PO_STORAGE_KEY);
     if(raw){
