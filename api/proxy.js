@@ -187,25 +187,27 @@ export default async function handler(req, res) {
         if (!Array.isArray(orders)) return res.status(400).json({ error: 'orders array required' });
         if (!BLOB_TOKEN) return res.status(500).json({ error: 'BLOB_TOKEN not configured' });
 
-        // PUT JSON to Vercel Blob with no random suffix so URL is stable/predictable
+        // PUT to Vercel Blob REST API
+        // addRandomSuffix=0 keeps filename stable, allowOverwrite=1 replaces existing file
         const encodedKey = PO_BLOB_KEY.split('/').map(encodeURIComponent).join('/');
-        const putUrl = `https://blob.vercel-storage.com/${encodedKey}?addRandomSuffix=0`;
+        const putUrl = `https://blob.vercel-storage.com/${encodedKey}?addRandomSuffix=0&allowOverwrite=1`;
         console.log('[save_po] Writing to:', putUrl);
         const r = await fetch(putUrl, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${BLOB_TOKEN}`,
             'Content-Type': 'application/json',
-            'x-content-type': 'application/json',
+            'x-api-version': '7',
           },
           body: JSON.stringify(orders),
         });
+        const responseText = await r.text();
+        console.log('[save_po] Status:', r.status, 'Response:', responseText.slice(0, 200));
         if (!r.ok) {
-          const err = await r.text();
-          console.error('[save_po] Write failed:', r.status, err);
-          return res.status(r.status).json({ error: 'Blob write failed', detail: err });
+          return res.status(r.status).json({ error: 'Blob write failed', detail: responseText });
         }
-        const d = await r.json();
+        let d = {};
+        try { d = JSON.parse(responseText); } catch(e) {}
         console.log('[save_po] Saved to:', d.url);
         return res.status(200).json({ success: true, url: d.url });
       }
